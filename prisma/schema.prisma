@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// update prisma schema from supabase
+// 1. export DATABASE_URL in .env file
+// 2. run `prisma db pull --url $DATABASE_URL --schema prisma/schema.prisma`
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String?
+  slug          String       @unique
+  content       String?
+  authorId      String?      @map("author_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  categoryId    Int          @default(1) @map("category_id")
+  subcategoryId Int?         @map("subcategory_id")
+  isTest        Boolean      @default(false) @map("is_test")
+  createdBy     String?      @map("created_by") @db.Uuid
+  updatedBy     String?      @map("updated_by") @db.Uuid
+  published     Boolean?     @default(false)
+  comments      Comment[]
+  tags          PostTag[]
+  category      Category     @relation(fields: [categoryId], references: [id], onDelete: SetDefault)
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
+
+  @@map("posts")
+}
+
+model Category {
+  id            Int           @id @default(autoincrement())
+  name          String
+  isDefault     Boolean       @default(false) @map("is_default")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  isTest        Boolean       @default(false) @map("is_test")
+  createdBy     String?       @map("created_by") @db.Uuid
+  updatedBy     String?       @map("updated_by") @db.Uuid
+  posts         Post[]
+  subcategories Subcategory[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id         Int      @id @default(autoincrement())
+  name       String
+  categoryId Int      @map("category_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  isTest     Boolean  @default(false) @map("is_test")
+  createdBy  String?  @map("created_by") @db.Uuid
+  updatedBy  String?  @map("updated_by") @db.Uuid
+  posts      Post[]
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("subcategories")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  isTest    Boolean   @default(false) @map("is_test")
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedBy String?   @map("updated_by") @db.Uuid
+  posts     PostTag[]
+
+  @@map("tags")
+}
+
+model PostTag {
+  postId    String   @map("post_id") @db.Uuid
+  tagId     Int      @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  isTest    Boolean  @default(false) @map("is_test")
+  createdBy String?  @map("created_by") @db.Uuid
+  updatedBy String?  @map("updated_by") @db.Uuid
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  authorId  String   @map("author_id") @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  isTest    Boolean  @default(false) @map("is_test")
+  createdBy String?  @map("created_by") @db.Uuid
+  updatedBy String?  @map("updated_by") @db.Uuid
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
