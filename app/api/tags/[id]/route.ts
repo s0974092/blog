@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 
 // 標籤驗證schema
 const tagSchema = z.object({
-  name: z.string().min(1).max(50),
+  name: z.string().min(1, '標籤名稱不能為空').max(50, '標籤名稱不能超過50個字符')
 });
 
 // GET /api/tags/[id] - 獲取單個標籤信息
@@ -19,7 +19,7 @@ export async function GET(
     
     if (isNaN(id)) {
       return NextResponse.json(
-        { success: false, message: '无效的标签 ID' },
+        { success: false, error: '無效的標籤 ID' },
         { status: 400 }
       );
     }
@@ -35,16 +35,16 @@ export async function GET(
     
     if (!tag) {
       return NextResponse.json(
-        { success: false, message: '标签不存在' },
+        { success: false, error: '標籤不存在' },
         { status: 404 }
       );
     }
     
     return NextResponse.json({ success: true, data: tag });
   } catch (error) {
-    console.error('获取标签失败:', error);
+    console.error('獲取標籤失敗:', error);
     return NextResponse.json(
-      { success: false, message: '获取标签失败' },
+      { success: false, error: '獲取標籤失敗' },
       { status: 500 }
     );
   }
@@ -61,7 +61,7 @@ export async function PATCH(
     
     if (isNaN(id)) {
       return NextResponse.json(
-        { success: false, message: '无效的标签 ID' },
+        { success: false, error: '無效的標籤 ID' },
         { status: 400 }
       );
     }
@@ -71,7 +71,27 @@ export async function PATCH(
     
     if (!validatedData.success) {
       return NextResponse.json(
-        { success: false, message: '无效的输入数据' },
+        { success: false, error: validatedData.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    // 檢查標籤名稱是否已存在（排除當前標籤）
+    const existingTag = await prisma.tag.findFirst({
+      where: {
+        name: {
+          equals: validatedData.data.name,
+          mode: 'insensitive'
+        },
+        NOT: {
+          id: id
+        }
+      }
+    });
+    
+    if (existingTag) {
+      return NextResponse.json(
+        { success: false, error: '標籤名稱已存在' },
         { status: 400 }
       );
     }
@@ -86,14 +106,14 @@ export async function PATCH(
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2025') {
         return NextResponse.json(
-          { success: false, message: '标签不存在' },
+          { success: false, error: '標籤不存在' },
           { status: 404 }
         );
       }
     }
-    console.error('更新标签失败:', error);
+    console.error('更新標籤失敗:', error);
     return NextResponse.json(
-      { success: false, message: '更新标签失败' },
+      { success: false, error: '更新標籤失敗' },
       { status: 500 }
     );
   }
@@ -110,7 +130,7 @@ export async function DELETE(
     
     if (isNaN(id)) {
       return NextResponse.json(
-        { success: false, message: '无效的标签 ID' },
+        { success: false, error: '無效的標籤 ID' },
         { status: 400 }
       );
     }
@@ -124,14 +144,14 @@ export async function DELETE(
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2025') {
         return NextResponse.json(
-          { success: false, message: '标签不存在' },
+          { success: false, error: '標籤不存在' },
           { status: 404 }
         );
       }
     }
-    console.error('删除标签失败:', error);
+    console.error('刪除標籤失敗:', error);
     return NextResponse.json(
-      { success: false, message: '删除标签失败' },
+      { success: false, error: '刪除標籤失敗' },
       { status: 500 }
     );
   }

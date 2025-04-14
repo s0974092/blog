@@ -51,8 +51,9 @@ interface PostSummary {
 
 interface TagsResponse {
   success: boolean
-  data: Tag[]
-  pagination: {
+  data: {
+    items: Tag[]
+    total: number
     page: number
     totalPages: number
   }
@@ -123,12 +124,12 @@ export default function TagsPage() {
     enabled: !!selectedTag,
   })
 
-  const tags = tagsResponse?.data || []
+  const tags = tagsResponse?.data?.items || []
   const postCounts = countsResponse?.counts || {}
   const relatedPosts = postsResponse?.data?.posts || []
-  const pagination = tagsResponse?.pagination || {
-    page: 1,
-    totalPages: 1,
+  const pagination = {
+    page: tagsResponse?.data?.page || 1,
+    totalPages: tagsResponse?.data?.totalPages || 1,
   }
 
   // 處理搜索

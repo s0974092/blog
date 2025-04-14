@@ -1,50 +1,65 @@
 'use client'
 
-import { use } from 'react'
-import { z } from 'zod'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import * as z from 'zod'
 
-import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { use } from 'react'
 
 const formSchema = z.object({
-  name: z.string().min(1, '標籤名稱不能為空').max(50, '標籤名稱不能超過50個字元'),
+  name: z
+    .string()
+    .min(1, '主題名稱不能為空')
+    .max(50, '主題名稱不能超過 50 個字符'),
 })
 
-type Params = {
-  id: string
-}
-
-interface Tag {
+interface Category {
   id: number
   name: string
   createdAt: string
   updatedAt: string
 }
 
-interface TagResponse {
+interface CategoryResponse {
   success: boolean
-  data: Tag
+  data: Category
 }
 
-export default function EditTagDialog({ params }: { params: Promise<Params> }) {
+type Params = {
+  id: string
+}
+
+export default function EditCategoryDialog({ params }: { params: Promise<Params> }) {
+  const { id } = use(params)
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { id } = use(params)
 
-  const { data: tagResponse, isLoading } = useQuery<TagResponse>({
-    queryKey: ['tag', id],
+  const { data: categoryResponse, isLoading } = useQuery<CategoryResponse>({
+    queryKey: ['category', id],
     queryFn: async () => {
-      const res = await fetch(`/api/tags/${id}`)
+      const res = await fetch(`/api/categories/${id}`)
       if (!res.ok) {
-        throw new Error('獲取標籤信息失敗')
+        throw new Error('獲取主題信息失敗')
       }
       return res.json()
     },
@@ -54,16 +69,16 @@ export default function EditTagDialog({ params }: { params: Promise<Params> }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: tagResponse?.data.name || '',
+      name: categoryResponse?.data.name || '',
     },
     values: {
-      name: tagResponse?.data.name || '',
+      name: categoryResponse?.data.name || '',
     },
   })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const response = await fetch(`/api/tags/${id}`, {
+      const response = await fetch(`/api/categories/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -73,15 +88,15 @@ export default function EditTagDialog({ params }: { params: Promise<Params> }) {
 
       if (!response.ok) {
         const result = await response.json()
-        throw new Error(result.error || '更新標籤失敗')
+        throw new Error(result.error || '更新主題失敗')
       }
 
-      toast.success('標籤更新成功')
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
-      queryClient.invalidateQueries({ queryKey: ['tag', id] })
+      toast.success('主題更新成功')
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['category', id] })
       router.back()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '更新標籤失敗')
+      toast.error(error instanceof Error ? error.message : '更新主題失敗')
     }
   }
 
@@ -104,7 +119,7 @@ export default function EditTagDialog({ params }: { params: Promise<Params> }) {
     <Dialog open onOpenChange={() => router.back()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>編輯標籤</DialogTitle>
+          <DialogTitle>編輯主題</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <div className="space-y-4 py-4">
@@ -113,9 +128,9 @@ export default function EditTagDialog({ params }: { params: Promise<Params> }) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>標籤名稱</FormLabel>
+                  <FormLabel>主題名稱</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="請輸入標籤名稱" />
+                    <Input {...field} placeholder="請輸入主題名稱" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
