@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import UserProfile from './UserProfile';
 import AdminLayout from './AdminLayout';
+import { getClientUser } from '@/lib/auth';
 
 export default function AuthLayout({
   children
@@ -17,12 +18,9 @@ export default function AuthLayout({
     // 獲取用戶資料
     const fetchUser = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
-        // 已通過中間件驗證，直接設置用戶資料
-        if (session) {
-          setUser(session.user);
+        const userData = await getClientUser();
+        if (userData) {
+          setUser(userData);
         }
       } catch (error: any) {
         console.error('獲取用戶信息失敗:', error);

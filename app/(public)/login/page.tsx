@@ -17,9 +17,9 @@ import * as z from "zod";
 import Image from "next/image";
 import { motion, useAnimationControls } from "framer-motion";
 import { useEffect, useState } from "react";
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { checkSession, signIn } from '@/lib/auth';
 
 // 定義表單驗證 schema
 const loginSchema = z.object({
@@ -44,11 +44,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function checkSession() {
+    async function initializeAuth() {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-
+        const session = await checkSession();
         if (session) {
           // 如果已登入，跳轉到儀表板
           window.location.href = '/dashboard';
@@ -62,7 +60,7 @@ export default function LoginPage() {
       }
     }
 
-    checkSession();
+    initializeAuth();
   }, []);
 
   const {
@@ -84,23 +82,17 @@ export default function LoginPage() {
   const isFormEmpty = !email && !password;
 
   const onSubmit = async (data: LoginFormValues) => {
-    try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-      
-      if (error) throw error;
-      
+    const result = await signIn(data);
+    
+    if (result.success) {
       toast.success('登入成功！');
       
       // 直接使用 window.location.href 進行硬重定向，避免路由系統可能的問題
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 1000);
-    } catch (error: any) {
-      console.error('登入錯誤:', error);
-      toast.error('登入失敗: ' + (error.message || '請檢查您的郵箱和密碼'));
+    } else {
+      toast.error('登入失敗: ' + result.error);
     }
   };
 

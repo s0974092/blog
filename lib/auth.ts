@@ -1,59 +1,85 @@
-import { supabase, supabaseAdmin } from './supabase';
-import { User } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { CookieMethodsServer, createServerClient } from '@supabase/ssr';
+import { supabase } from './supabase';
+
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
 
 /**
- * 獲取當前登入的用戶會話，可用於服務端組件
- * @returns 返回用戶會話或null
+ * 檢查用戶會話狀態
+ * @returns 返回會話信息或null
  */
-export async function auth() {
+export async function checkSession() {
   try {
-    // Get cookie store with await
-    const cookieStore = await cookies();
-    
-    // 創建服務器端 Supabase 客戶端
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get: async (name: string) => {
-            const cookieStore = await cookies();
-            return cookieStore.get(name)?.value;
-          },
-          getAll: async () => {
-            const cookieStore = await cookies();
-            return Array.from(cookieStore.getAll());
-          },
-          set: () => {}, // 只讀不寫
-          remove: () => {} // 只讀不寫
-        } as CookieMethodsServer
-      }
-    );
-    
-    // 獲取會話
     const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return session;
+  } catch (error) {
+    console.error('檢查會話狀態失敗:', error);
+    return null;
+  }
+}
+
+/**
+ * 用戶登入
+ * @param credentials 登入憑證
+ * @returns 登入結果
+ */
+export async function signIn(credentials: LoginCredentials) {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword(credentials);
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('登入失敗:', error);
+    return { 
+      success: false, 
+      error: error.message || '請檢查您的郵箱和密碼'
+    };
+  }
+}
+
+/**
+ * 客戶端獲取當前用戶信息
+ * @returns 返回用戶信息或null
+ */
+export async function getClientUser() {
+  try {
+    // 先檢查 session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (error) {
-      console.error('獲取會話錯誤:', error.message);
+    if (sessionError) {
+      console.error('檢查會話狀態失敗:', sessionError.message);
       return null;
     }
-    
+
+    // 如果沒有 session，直接返回 null
     if (!session) {
       return null;
     }
+
+    // 有 session 才獲取用戶信息
+    const { data: { user }, error } = await supabase.auth.getUser();
     
+    if (error) {
+      console.error('獲取用戶信息錯誤:', error.message);
+      return null;
+    }
+
+    if (!user) {
+      return null;
+    }
+
     return {
-      user: {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.user_metadata?.display_name || session.user.email,
-        role: session.user.role || 'authenticated'
-      }
+      id: user.id,
+      email: user.email,
+      user_metadata: {
+        display_name: user.user_metadata?.display_name || user.email
+      },
+      role: user.role || 'authenticated'
     };
   } catch (error) {
-    console.error('驗證異常:', error);
+    console.error('獲取用戶信息異常:', error);
     return null;
   }
 }

@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+import { getServerUser } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -16,9 +16,6 @@ export async function GET(
   try {
     const params = await context.params;
     const id = Number(params.id);
-    // const { searchParams } = new URL(request.url)
-    // const includePosts = searchParams.get('posts') === 'true'
-    // const categoryId = parseInt(context.params.id)
 
     if (isNaN(id)) {
       return NextResponse.json(
@@ -83,19 +80,20 @@ export async function DELETE(
   context: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
+    const user = await getServerUser()
     
     // 需要登錄才能刪除
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: '無權限刪除主題' },
         { status: 401 }
       )
     }
 
-    const categoryId = parseInt(context.params.id)
+    const params = await context.params;
+    const id = Number(params.id);
 
-    if (isNaN(categoryId)) {
+    if (isNaN(id)) {
       return NextResponse.json(
         { success: false, error: '無效的主題 ID' },
         { status: 400 }
@@ -105,7 +103,7 @@ export async function DELETE(
     // 刪除主題
     await prisma.category.delete({
       where: {
-        id: categoryId
+        id
       }
     })
 
@@ -128,19 +126,20 @@ export async function PATCH(
   context: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
+    const user = await getServerUser()
     
     // 需要登錄才能更新
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: '無權限更新主題' },
         { status: 401 }
       )
     }
 
-    const categoryId = parseInt(context.params.id)
+    const params = await context.params;
+    const id = Number(params.id);
 
-    if (isNaN(categoryId)) {
+    if (isNaN(id)) {
       return NextResponse.json(
         { success: false, error: '無效的主題 ID' },
         { status: 400 }
@@ -168,7 +167,7 @@ export async function PATCH(
           mode: 'insensitive'
         },
         NOT: {
-          id: categoryId
+          id
         }
       }
     })
@@ -183,11 +182,11 @@ export async function PATCH(
     // 更新主題
     const category = await prisma.category.update({
       where: {
-        id: categoryId
+        id
       },
       data: {
         name,
-        updatedBy: session.user.id
+        updatedBy: user.id
       }
     })
 

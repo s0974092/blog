@@ -2,8 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { signOut } from '@/lib/auth';
 
 interface UserProfileProps {
   user: {
@@ -18,15 +18,13 @@ export default function UserProfile({ user }: UserProfileProps) {
   const router = useRouter();
 
   const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+    const result = await signOut();
+    
+    if (result.success) {
       toast.success('已成功登出');
       router.replace('/blog');
-    } catch (error: any) {
-      console.error('登出失敗:', error);
-      toast.error('登出失敗: ' + error.message);
+    } else {
+      toast.error('登出失敗: ' + result.error);
     }
   };
 

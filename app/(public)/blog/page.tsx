@@ -7,25 +7,30 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Post } from '@/types/database';
 import { useRouter } from 'next/navigation';
+import { getClientUser } from '@/lib/auth';
+
+interface User {
+  id: string;
+  email: string;
+  user_metadata: {
+    display_name: string;
+  };
+  role: string;
+}
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     async function initialize() {
       try {
         // 檢查登入狀態
-        const { data: { session: userSession }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          console.error('登入狀態檢查失敗:', sessionError);
-          toast.error('登入狀態檢查失敗', {
-            description: sessionError.message
-          });
-          return;
+        const userData = await getClientUser();
+        if (userData && userData.email) {  // 確保 email 存在
+          setUser(userData as User);  // 使用類型斷言
         }
-        setSession(userSession);
 
         // 獲取文章列表
         const { data, error } = await supabase
@@ -63,6 +68,9 @@ export default function BlogPage() {
     );
   }
 
+  // 獲取顯示名稱，如果沒有就使用郵箱
+  const displayName = user?.user_metadata?.display_name || user?.email;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       <header className="bg-white shadow">
@@ -70,10 +78,10 @@ export default function BlogPage() {
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">部落格</h1>
             <div className="flex gap-4">
-              {session ? (
+              {user ? (
                 <>
                   <span className="text-gray-600 self-center">
-                    {session.user.email}
+                    {displayName}
                   </span>
                   <Link href="/dashboard">
                     <Button variant="outline" className="cursor-pointer">後台管理</Button>
@@ -89,42 +97,26 @@ export default function BlogPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {posts.length === 0 ? (
-          <div className="text-center py-12">
-            <h2 className="text-xl text-gray-600">目前還沒有文章</h2>
-          </div>
-        ) : (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post) => (
-              <article
-                key={post.id}
-                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-              >
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                    <Link href={`/blog/${post.slug}`} className="hover:text-blue-600">
-                      {post.title}
-                    </Link>
-                  </h2>
-                  <p className="text-gray-600 line-clamp-3">
-                    {post.content}
-                  </p>
-                  <div className="mt-4 flex justify-between items-center">
-                    <time className="text-sm text-gray-500">
-                      {new Date(post.created_at).toLocaleDateString('zh-TW')}
-                    </time>
-                    <Link href={`/blog/${post.slug}`}>
-                      <Button variant="link" className="text-blue-600 cursor-pointer">
-                        閱讀更多
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {posts.map((post) => (
+            <article
+              key={post.id}
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+            >
+              <div className="p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <Link href={`/blog/${post.id}`} className="hover:text-blue-600">
+                    {post.title}
+                  </Link>
+                </h2>
+                <time className="text-sm text-gray-500">
+                  {new Date(post.created_at).toLocaleDateString('zh-TW')}
+                </time>
+              </div>
+            </article>
+          ))}
+        </div>
       </main>
     </div>
   );

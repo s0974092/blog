@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { TagService } from '@/core/services/tag.service'
-import { auth } from '@/lib/auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { getServerUser } from '@/lib/server-auth'
 
 // 標籤驗證schema
 const tagSchema = z.object({
@@ -14,10 +14,10 @@ const tagService = new TagService()
 // POST /api/tags/new - 創建新標籤
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    const user = await getServerUser()
     
     // 需要登錄才能創建
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: '無權限創建標籤' },
         { status: 401 }
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const tag = await prisma.category.create({
         data: {
             name,
-            createdBy: session.user.id
+            createdBy: user.id
         }
     })
     

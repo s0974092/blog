@@ -19,24 +19,3 @@ export const supabaseAdmin = createClient(
   supabaseUrl as string,
   supabaseServiceKey as string
 )
-
-// 测试连接
-export async function testConnection() {
-  try {
-    // 使用 auth.getSession() 来测试连接
-    const { data: { session }, error } = await supabase.auth.getSession()
-    if (error) throw error
-    
-    return { 
-      success: true, 
-      message: 'Supabase连接成功',
-      session: session ? '已登录' : '未登录'
-    }
-  } catch (error) {
-    return { 
-      success: false, 
-      message: 'Supabase连接失败', 
-      error 
-    }
-  }
-} 

@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+import { getServerUser } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -11,10 +11,10 @@ const categorySchema = z.object({
 // POST /api/categories/new - 創建新主題
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    const user = await getServerUser()
     
     // 需要登錄才能創建
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: '無權限創建主題' },
         { status: 401 }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const category = await prisma.category.create({
       data: {
         name,
-        createdBy: session.user.id
+        createdBy: user.id
       }
     })
 

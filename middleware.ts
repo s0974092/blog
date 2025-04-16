@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { CookieOptions } from '@supabase/ssr';
+import { getServerUser } from '@/lib/server-auth';
 
 // 管理頁面路徑列表（這些是實際 URL，不包含 Route Group 名稱）
 const ADMIN_PATHS = [
@@ -34,8 +35,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // 檢查會話是否存在
-  const { data: { session } } = await supabase.auth.getSession();
+  // 使用 getServerUser 方法
+  const user = await getServerUser();
 
   // 獲取請求URL的路徑名
   const pathname = request.nextUrl.pathname;
@@ -46,13 +47,13 @@ export async function middleware(request: NextRequest) {
   );
   
   // 如果是管理頁面但沒有登入，重定向到登入頁
-  if (isAdminPage && !session) {
+  if (isAdminPage && !user) {
     const redirectUrl = new URL('/login', request.url);
     return NextResponse.redirect(redirectUrl);
   }
   
   // 如果已登入且訪問登入頁，重定向到管理後台
-  if (pathname === '/login' && session) {
+  if (pathname === '/login' && user) {
     const redirectUrl = new URL('/dashboard', request.url);
     return NextResponse.redirect(redirectUrl);
   }
