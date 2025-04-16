@@ -25,6 +25,7 @@ export async function GET(
     }
 
     const includePosts = req.nextUrl.searchParams.get('posts') === 'true';
+    const includeSubCategories = req.nextUrl.searchParams.get('subcategories') === 'true';
 
     if (includePosts) {
       // 獲取主題相關的文章
@@ -48,7 +49,25 @@ export async function GET(
       })
     }
 
-    // 如果不需要文章，只返回主題信息
+    if (includeSubCategories) {
+      // 獲取主題相關的子主題
+      const subCategories = await prisma.subcategory.findMany({
+        where: {
+          categoryId: id
+        },
+        select: {
+          id: true,
+          name: true
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        data: { subCategories }
+      })
+    }
+
+    // 如果不需要文章和子主題，只返回主題信息
     const category = await prisma.category.findUnique({
       where: {
         id: id
@@ -77,7 +96,7 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getServerUser()
@@ -100,12 +119,37 @@ export async function DELETE(
       )
     }
 
-    // 刪除主題
-    await prisma.category.delete({
+    // 檢查是否有關聯的子主題
+    const subCategories = await prisma.subcategory.findMany({
       where: {
-        id
+        categoryId: id
       }
     })
+
+    // 如果有關聯的子主題，一併刪除
+    if (subCategories.length > 0) {
+      await prisma.$transaction([
+        // 刪除所有關聯的子主題
+        prisma.subcategory.deleteMany({
+          where: {
+            categoryId: id
+          }
+        }),
+        // 刪除主題
+        prisma.category.delete({
+          where: {
+            id
+          }
+        })
+      ])
+    } else {
+      // 如果沒有關聯的子主題，直接刪除主題
+      await prisma.category.delete({
+        where: {
+          id
+        }
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -123,7 +167,7 @@ export async function DELETE(
 // PATCH /api/categories/[id] - 更新主題
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getServerUser()

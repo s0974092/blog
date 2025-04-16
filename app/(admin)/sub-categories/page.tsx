@@ -36,11 +36,16 @@ import {
 } from '@/components/ui/table'
 import { Pagination } from "@/components/ui/pagination"
 
-interface Category {
+interface SubCategory {
   id: number
   name: string
+  categoryId: number
+  categoryName: string
   createdAt: string
   updatedAt: string
+  category?: {
+    name: string
+  }
 }
 
 interface PostSummary {
@@ -49,14 +54,9 @@ interface PostSummary {
   createdAt: string
 }
 
-interface SubCategory {
-  id: number
-  name: string
-}
-
-interface CategoriesResponse {
+interface SubCategoriesResponse {
   success: boolean
-  data: Category[]
+  data: SubCategory[]
   pagination: {
     page: number
     totalPages: number
@@ -75,46 +75,38 @@ interface PostsResponse {
   }
 }
 
-interface SubCategoriesResponse {
-  success: boolean
-  data: {
-    subCategories: SubCategory[]
-  }
-}
-
-export default function CategoriesPage() {
+export default function SubCategoriesPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [openPostsDialog, setOpenPostsDialog] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
+  const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategory | null>(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const pageSize = 10
 
-  // 獲取主題列表
-  const { data: categoriesResponse, isLoading: isLoadingCategories } = useQuery<CategoriesResponse>({
-    queryKey: ['categories', search, page, pageSize],
+  // 獲取子主題列表
+  const { data: subCategoriesResponse, isLoading: isLoadingSubCategories } = useQuery<SubCategoriesResponse>({
+    queryKey: ['subCategories', search, page, pageSize],
     queryFn: async () => {
       const params = new URLSearchParams({
         search,
         page: page.toString(),
         pageSize: pageSize.toString(),
       })
-      const res = await fetch(`/api/categories?${params}`)
+      const res = await fetch(`/api/sub-categories?${params}`)
       if (!res.ok) {
-        throw new Error('獲取主題列表失敗')
+        throw new Error('獲取子主題列表失敗')
       }
       return res.json()
     },
   })
 
-  // 獲取主題文章數量
+  // 獲取子主題文章數量
   const { data: countsResponse } = useQuery<CountsResponse>({
-    queryKey: ['categoryCounts'],
+    queryKey: ['subCategoryCounts'],
     queryFn: async () => {
-      const res = await fetch('/api/categories/counts')
+      const res = await fetch('/api/sub-categories/counts')
       if (!res.ok) {
         throw new Error('獲取文章數量失敗')
       }
@@ -122,24 +114,24 @@ export default function CategoriesPage() {
     },
   })
 
-  // 獲取特定主題的相關文章
+  // 獲取特定子主題的相關文章
   const { data: postsResponse, isLoading: loadingPosts } = useQuery<PostsResponse>({
-    queryKey: ['categoryPosts', selectedCategory?.id],
+    queryKey: ['subCategoryPosts', selectedSubCategory?.id],
     queryFn: async () => {
-      if (!selectedCategory) return null
-      const res = await fetch(`/api/categories/${selectedCategory.id}?posts=true`)
+      if (!selectedSubCategory) return null
+      const res = await fetch(`/api/sub-categories/${selectedSubCategory.id}?posts=true`)
       if (!res.ok) {
         throw new Error('獲取相關文章失敗')
       }
       return res.json()
     },
-    enabled: !!selectedCategory,
+    enabled: !!selectedSubCategory,
   })
 
-  const categories = categoriesResponse?.data || []
+  const subCategories = subCategoriesResponse?.data || []
   const postCounts = countsResponse?.counts || {}
   const relatedPosts = postsResponse?.data?.posts || []
-  const pagination = categoriesResponse?.pagination || {
+  const pagination = subCategoriesResponse?.pagination || {
     page: 1,
     totalPages: 1,
   }
@@ -155,83 +147,70 @@ export default function CategoriesPage() {
     setPage(newPage)
   }
 
-  // 處理新增主題按鈕點擊
+  // 處理新增子主題按鈕點擊
   const handleCreateClick = () => {
-    router.push('/categories/new', { scroll: false })
+    router.push('/sub-categories/new', { scroll: false })
   }
 
   // 處理編輯按鈕點擊
-  const handleEditClick = (category: Category) => {
-    router.push(`/categories/edit/${category.id}`, { scroll: false })
+  const handleEditClick = (subCategory: SubCategory) => {
+    router.push(`/sub-categories/edit/${subCategory.id}`, { scroll: false })
   }
 
   // 處理刪除按鈕點擊
-  const handleDeleteClick = async (category: Category) => {
-    try {
-      // 獲取主題相關的子主題
-      const res = await fetch(`/api/categories/${category.id}?subcategories=true`)
-      if (!res.ok) {
-        throw new Error('獲取子主題資料失敗')
-      }
-      const data = await res.json()
-      setSubCategories(data.data.subCategories || [])
-    } catch (error) {
-      console.error('獲取子主題資料失敗:', error)
-      setSubCategories([])
-    }
-
-    setSelectedCategory(category)
+  const handleDeleteClick = (subCategory: SubCategory) => {
+    setSelectedSubCategory(subCategory)
     setOpenDeleteDialog(true)
   }
 
   // 處理查看文章按鈕點擊
-  const handlePostsClick = (category: Category) => {
-    setSelectedCategory(category)
+  const handlePostsClick = (subCategory: SubCategory) => {
+    setSelectedSubCategory(subCategory)
     setOpenPostsDialog(true)
   }
 
-  // 處理刪除主題
-  const deleteCategory = async () => {
-    if (!selectedCategory) return
+  // 處理刪除子主題
+  const deleteSubCategory = async () => {
+    if (!selectedSubCategory) return
 
     try {
-      const response = await fetch(`/api/categories/${selectedCategory.id}`, {
+      const response = await fetch(`/api/sub-categories/${selectedSubCategory.id}`, {
         method: 'DELETE',
       })
 
       if (!response.ok) {
-        throw new Error('刪除主題失敗')
+        throw new Error('刪除子主題失敗')
       }
 
-      toast.success('主題刪除成功')
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
-      queryClient.invalidateQueries({ queryKey: ['categoryCounts'] })
+      toast.success('子主題刪除成功')
+      queryClient.invalidateQueries({ queryKey: ['subCategories'] })
+      queryClient.invalidateQueries({ queryKey: ['subCategoryCounts'] })
       setOpenDeleteDialog(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '刪除主題失敗')
+      toast.error(error instanceof Error ? error.message : '刪除子主題失敗')
     }
   }
 
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">主題管理</h1>
+        <h1 className="text-2xl font-bold">子主題管理</h1>
         <div className="flex items-center gap-4">
           <div className="w-64">
             <Input
-              placeholder="搜尋主題..."
+              placeholder="搜尋子主題..."
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
           <Button onClick={handleCreateClick} className="cursor-pointer">
             <PlusIcon className="w-4 h-4 mr-2" />
-            新增主題
+            新增子主題
           </Button>
         </div>
       </div>
 
-      {isLoadingCategories ? (
+      {isLoadingSubCategories ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
@@ -243,6 +222,7 @@ export default function CategoriesPage() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>名稱</TableHead>
+                  <TableHead>所屬主題</TableHead>
                   <TableHead>文章數量</TableHead>
                   <TableHead>建立時間</TableHead>
                   <TableHead>更新時間</TableHead>
@@ -250,31 +230,32 @@ export default function CategoriesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell>{category.id}</TableCell>
-                    <TableCell>{category.name}</TableCell>
+                {subCategories.map((subCategory) => (
+                  <TableRow key={subCategory.id}>
+                    <TableCell>{subCategory.id}</TableCell>
+                    <TableCell>{subCategory.name}</TableCell>
+                    <TableCell>{subCategory.category?.name || '-'}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
                         className="px-2 h-auto font-normal hover:underline cursor-pointer"
-                        onClick={() => handlePostsClick(category)}
+                        onClick={() => handlePostsClick(subCategory)}
                       >
-                        {postCounts[category.id] || 0}
+                        {postCounts[subCategory.id] || 0}
                       </Button>
                     </TableCell>
                     <TableCell>
-                      {category.createdAt ? format(new Date(category.createdAt), 'yyyy-MM-dd HH:mm:ss') : '-'}
+                      {subCategory.createdAt ? format(new Date(subCategory.createdAt), 'yyyy-MM-dd HH:mm:ss') : '-'}
                     </TableCell>
                     <TableCell>
-                      {category.updatedAt ? format(new Date(category.updatedAt), 'yyyy-MM-dd HH:mm:ss') : '-'}
+                      {subCategory.updatedAt ? format(new Date(subCategory.updatedAt), 'yyyy-MM-dd HH:mm:ss') : '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleEditClick(category)}
+                          onClick={() => handleEditClick(subCategory)}
                           className="cursor-pointer"
                         >
                           <PencilIcon className="w-4 h-4" />
@@ -283,7 +264,7 @@ export default function CategoriesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDeleteClick(category)}
+                          onClick={() => handleDeleteClick(subCategory)}
                           className="cursor-pointer"
                         >
                           <Trash2Icon className="w-4 h-4" />
@@ -312,27 +293,17 @@ export default function CategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>確認刪除</AlertDialogTitle>
             <AlertDialogDescription>
-              確定要刪除主題「{selectedCategory?.name}」嗎？
-              {postCounts[selectedCategory?.id || 0] > 0 && (
+              確定要刪除子主題「{selectedSubCategory?.name}」嗎？
+              {postCounts[selectedSubCategory?.id || 0] > 0 && (
                 <p className="text-red-500 mt-2">
-                  注意：此主題下有 {postCounts[selectedCategory?.id || 0]} 篇文章，刪除主題將會移除這些文章的主題關聯。
-                </p>
-              )}
-              {subCategories.length > 0 && (
-                <p className="text-red-500 mt-2">
-                  注意：此主題下有 {subCategories.length} 個子主題，刪除主題將會一併刪除這些子主題：
-                  <ul className="list-disc list-inside mt-1">
-                    {subCategories.map(sub => (
-                      <li key={sub.id}>{sub.name}</li>
-                    ))}
-                  </ul>
+                  注意：此子主題下有 {postCounts[selectedSubCategory?.id || 0]} 篇文章，刪除子主題將會移除這些文章的子主題關聯。
                 </p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="cursor-pointer">取消</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteCategory} className="cursor-pointer bg-red-600 hover:bg-red-500">確認刪除</AlertDialogAction>
+            <AlertDialogAction onClick={deleteSubCategory} className="cursor-pointer bg-red-600 hover:bg-red-500">確認刪除</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -340,7 +311,7 @@ export default function CategoriesPage() {
       <Dialog open={openPostsDialog} onOpenChange={setOpenPostsDialog}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>主題「{selectedCategory?.name}」的相關文章</DialogTitle>
+            <DialogTitle>子主題「{selectedSubCategory?.name}」的相關文章</DialogTitle>
           </DialogHeader>
           {loadingPosts ? (
             <div className="flex justify-center items-center h-64">
@@ -366,4 +337,4 @@ export default function CategoriesPage() {
       </Dialog>
     </div>
   )
-}
+} 

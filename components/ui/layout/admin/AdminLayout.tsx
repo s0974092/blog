@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, FileText, Tags, ChevronLeft, ChevronRight, Palette } from 'lucide-react'
+import { LayoutDashboard, FileText, Tags, ChevronLeft, ChevronRight, Palette, Layers } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +15,7 @@ const menuItems = [
   { name: '儀表板', path: '/dashboard', icon: LayoutDashboard },
   { name: '文章維護', path: '/posts', icon: FileText },
   { name: '主題維護', path: '/categories', icon: Palette },
+  { name: '子主題維護', path: '/sub-categories', icon: Layers },
   { name: '標籤維護', path: '/tags', icon: Tags }
 ]
 

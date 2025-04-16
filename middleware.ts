@@ -9,6 +9,7 @@ const ADMIN_PATHS = [
   '/dashboard',
   '/posts',
   '/categories',
+  '/sub-categories',
   '/tags',
 //   '/users',
 //   '/settings'
@@ -67,6 +68,7 @@ export const config = {
     '/dashboard/:path*',
     '/posts/:path*',
     '/categories/:path*',
+    '/sub-categories/:path*',
     '/tags/:path*',
     // '/users/:path*',
     // '/settings/:path*',
