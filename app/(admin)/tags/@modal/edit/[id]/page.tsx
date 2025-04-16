@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Loader2 } from 'lucide-react'
 
 const formSchema = z.object({
-  name: z.string().min(1, '標籤名稱不能為空').max(50, '標籤名稱不能超過50個字元'),
+  name: z.string().min(1, '標籤名稱不能為空').max(20, '標籤名稱不能超過20個字元'),
 })
 
 type Params = {

@@ -30,7 +30,7 @@ const formSchema = z.object({
   name: z
     .string()
     .min(1, '主題名稱不能為空')
-    .max(50, '主題名稱不能超過 50 個字符'),
+    .max(20, '主題名稱不能超過 20 個字符'),
 })
 
 interface Category {

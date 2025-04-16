@@ -1,14 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TagService } from '@/core/services/tag.service';
-import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-
-// 標籤驗證schema
-const tagSchema = z.object({
-  name: z.string().min(1, '標籤名稱不能為空').max(50, '標籤名稱不能超過50個字符')
-});
-
-const tagService = new TagService();
 
 // GET /api/tags - 獲取所有標籤
 export async function GET(request: NextRequest) {
