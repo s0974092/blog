@@ -28,6 +28,10 @@ import {
 import { MultiSelect } from "@/components/ui/multi-select"
 import { PlusIcon } from "lucide-react"
 import { useCategoryContext } from './context'
+import { debounce } from 'lodash'
+import pinyin from "pinyin"
+import { CheckCircle, XCircle, Loader2, HelpCircle } from "lucide-react"
+import { sub } from "date-fns"
 
 // 將類型定義移到頂部
 type Category = {
@@ -48,7 +52,8 @@ type Tag = {
 
 const formSchema = z.object({
   title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
-  slug: z.string().min(1, "Slug不能為空").max(100, "Slug不能超過100個字元"),
+  slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元"),
+  slugStatus: z.enum(["success", "error", "validating"]).optional(),
   content: z.string().min(1, "內容不能為空"),
   categoryId: z.number().optional()
     .refine((val) => val !== undefined && val > 0, {
@@ -83,6 +88,7 @@ export default function NewPost() {
     defaultValues: {
       title: "",
       slug: "",
+      slugStatus: undefined,
       content: "",
       categoryId: undefined,
       subCategoryId: null,
@@ -218,31 +224,51 @@ export default function NewPost() {
 
   // 根據標題自動生成 Slug
   const handleTitleChange = (title: string) => {
-    form.setValue('title', title)
-    const slug = title
+    form.setValue('title', title);
+    if (!title) {
+      form.setValue('slug', ''); // 清空 slug
+      form.setValue('slugStatus', undefined); // 清空狀態
+      return;
+    }
+    const slug = pinyin(title, {
+      style: pinyin.STYLE_NORMAL, // 使用普通拼音樣式
+    })
+      .flat() // 將多維數組展平
+      .join('-') // 使用連字符連接
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-    form.setValue('slug', slug)
-    validateSlug(slug)
+      .replace(/[^a-z0-9-]+/g, '-') // 移除非字母、數字和連字符的字符
+      .replace(/(^-|-$)/g, ''); // 移除開頭和結尾的連字符
+
+    form.setValue('slug', slug);
+    form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
+    validateSlug(slug);
   }
 
   // 驗證 Slug 是否重複
-  const validateSlug = async (slug: string) => {
+  const validateSlug = debounce(async (slug: string) => {
     try {
-      const response = await fetch(`/api/posts/validate-slug?slug=${slug}`)
-      if (!response.ok) throw new Error('驗證 Slug 失敗')
-      const data = await response.json()
+      if (!slug) {
+        form.setValue('slugStatus', undefined);
+        return;
+      }
+      const response = await fetch(`/api/posts/validate-slug?slug=${slug}`);
+      if (!response.ok) throw new Error('驗證 Slug 失敗');
+      const data = await response.json();
       if (data.exists) {
         form.setError('slug', {
           type: 'manual',
-          message: '此 Slug 已存在'
-        })
+          message: '此 Slug 已存在',
+        });
+        form.setValue('slugStatus', 'error');
+      } else {
+        form.clearErrors('slug');
+        form.setValue('slugStatus', 'success');
       }
     } catch (error) {
-      toast.error('驗證 Slug 失敗')
+      toast.error('驗證 Slug 失敗');
+      form.setValue('slugStatus', 'error');
     }
-  }
+  }, 300); // 設定 debounce 時間為 300 毫秒
 
   // 检查是否有新的标签ID
   useEffect(() => {
@@ -361,14 +387,33 @@ export default function NewPost() {
                     <FormItem>
                       <FormLabel>Slug</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="請輸入文章 Slug"
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e)
-                            validateSlug(e.target.value)
-                          }}
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder="請輸入文章 Slug"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              if (e.target.value === "") {
+                                form.setValue('slugStatus', undefined); // 清空狀態
+                                return;
+                              }
+                              form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
+                              validateSlug(e.target.value);
+                            }}
+                          />
+                          {form.getValues('slugStatus') === undefined && (
+                            <HelpCircle className="absolute right-2 top-2 h-5 w-5 text-gray-500" />
+                          )}
+                          {form.getValues('slugStatus') === 'success' && (
+                            <CheckCircle className="absolute right-2 top-2 h-5 w-5 text-green-500" />
+                          )}
+                          {form.getValues('slugStatus') === 'error' && (
+                            <XCircle className="absolute right-2 top-2 h-5 w-5 text-red-500" />
+                          )}
+                          {form.getValues('slugStatus') === 'validating' && (
+                            <Loader2 className="absolute right-2 top-2 h-5 w-5 text-blue-500 animate-spin" />
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -383,7 +428,7 @@ export default function NewPost() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>主題</FormLabel>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         <Select
                           onValueChange={(value) => {
                             if (value === 'reset') {
@@ -436,7 +481,7 @@ export default function NewPost() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>子主題</FormLabel>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         <Select
                           onValueChange={(value) => {
                             if (value === 'reset') {
@@ -450,13 +495,13 @@ export default function NewPost() {
                           disabled={!form.getValues('categoryId')}
                         >
                           <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue 
+                            <SelectTrigger className="w-full" disabled={subCategories.length === 0}>
+                              <SelectValue
                                 placeholder={
                                   !form.getValues('categoryId') 
                                     ? "請先選擇主題" 
-                                    : "請選擇子主題"
-                                } 
+                                    : (subCategories.length === 0 ? "無可用的子主題" : "請選擇子主題")
+                                }
                               />
                             </SelectTrigger>
                           </FormControl>
@@ -502,24 +547,22 @@ export default function NewPost() {
                   <FormItem>
                     <FormLabel>標籤</FormLabel>
                     <div className="flex gap-2 items-start">
-                      <div className="flex-1">
-                        <FormControl>
-                          <MultiSelect
-                            placeholder="請選擇標籤"
-                            options={tags.map(tag => ({
-                              label: tag.name,
-                              value: String(tag.id)
-                            }))}
-                            selected={field.value ? field.value.map(String) : []}
-                            onChange={(value) => {
-                              // 将字符串ID转换为数字
-                              const numericValues = value.map(Number)
-                              field.onChange(numericValues)
-                              form.trigger('tagIds')
-                            }}
-                          />
-                        </FormControl>
-                      </div>
+                      <FormControl>
+                        <MultiSelect
+                          placeholder="請選擇標籤"
+                          options={tags.map(tag => ({
+                            label: tag.name,
+                            value: String(tag.id)
+                          }))}
+                          selected={field.value ? field.value.map(String) : []}
+                          onChange={(value) => {
+                            // 将字符串ID转换为数字
+                            const numericValues = value.map(Number)
+                            field.onChange(numericValues)
+                            form.trigger('tagIds')
+                          }}
+                        />
+                      </FormControl>
                       <Button
                         type="button"
                         variant="outline"
@@ -596,4 +639,4 @@ export default function NewPost() {
       </div>
     </div>
   )
-} 
+}
