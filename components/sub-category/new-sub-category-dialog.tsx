@@ -3,61 +3,26 @@
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { z } from 'zod'
 import { toast } from 'sonner'
-import * as z from 'zod'
-import { use } from 'react'
-import { Loader2 } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const formSchema = z.object({
-  name: z
-    .string()
-    .min(1, '子主題名稱不能為空')
-    .max(20, '子主題名稱不能超過 20 個字符'),
-  categoryId: z
-    .string()
-    .min(1, '請選擇所屬主題')
+  name: z.string().min(1, '子主題名稱不能為空').max(20, '子主題名稱不能超過20個字元'),
+  categoryId: z.string().min(1, '請選擇所屬主題'),
 })
+
+type FormValues = z.infer<typeof formSchema>
 
 interface Category {
   id: number
   name: string
-}
-
-interface SubCategory {
-  id: number
-  name: string
-  categoryId: number
-  category: Category
-}
-
-interface SubCategoryResponse {
-  success: boolean
-  data: SubCategory
 }
 
 interface CategoriesResponse {
@@ -70,12 +35,15 @@ interface CategoriesResponse {
   }
 }
 
-type Params = {
-  id: string
+interface NewSubCategoryDialogProps {
+  onSubCategoryCreated?: (subCategoryId: number) => void
+  defaultCategoryId?: number
 }
 
-export default function EditSubCategoryModal({ params: paramsPromise }: { params: Promise<Params> }) {
-  const { id } = use(paramsPromise)
+export default function NewSubCategoryDialog({ 
+  onSubCategoryCreated,
+  defaultCategoryId
+}: NewSubCategoryDialogProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
 
@@ -87,41 +55,22 @@ export default function EditSubCategoryModal({ params: paramsPromise }: { params
       if (!res.ok) {
         throw new Error('獲取主題列表失敗')
       }
-      console.log('主題列表數據:', res);
-      
       return res.json()
     },
   })
 
-  // 獲取子主題資料
-  const { data: subCategoryResponse, isLoading } = useQuery<SubCategoryResponse>({
-    queryKey: ['subCategory', id],
-    queryFn: async () => {
-      const res = await fetch(`/api/sub-categories/${id}`)
-      if (!res.ok) {
-        throw new Error('獲取子主題資料失敗')
-      }
-      return res.json()
-    },
-    enabled: !!id,
-  })
-
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: subCategoryResponse?.data.name || '',
-      categoryId: subCategoryResponse?.data.categoryId.toString() || '',
-    },
-    values: {
-      name: subCategoryResponse?.data.name || '',
-      categoryId: subCategoryResponse?.data.categoryId.toString() || '',
+      name: "",
+      categoryId: defaultCategoryId ? defaultCategoryId.toString() : "",
     },
   })
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     try {
-      const response = await fetch(`/api/sub-categories/${id}`, {
-        method: 'PUT',
+      const response = await fetch('/api/sub-categories/new', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -133,41 +82,31 @@ export default function EditSubCategoryModal({ params: paramsPromise }: { params
 
       if (!response.ok) {
         const result = await response.json()
-        throw new Error(result.error || '更新子主題失敗')
+        throw new Error(result.error || '建立子主題失敗')
       }
 
-      toast.success('子主題更新成功')
+      const data = await response.json()
+      toast.success('子主題建立成功')
       queryClient.invalidateQueries({ queryKey: ['subCategories'] })
-      queryClient.invalidateQueries({ queryKey: ['subCategory', id] })
+      
+      if (onSubCategoryCreated) {
+        onSubCategoryCreated(data.data.id)
+      }
+      
       router.back()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '更新子主題失敗')
+      toast.error(error instanceof Error ? error.message : '建立子主題失敗')
     }
-  }
-
-  if (isLoading) {
-    return (
-      <Dialog open onOpenChange={() => router.back()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>載入中</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center items-center h-32">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
   }
 
   return (
     <Dialog open onOpenChange={() => router.back()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>編輯子主題</DialogTitle>
+          <DialogTitle>建立新子主題</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <div className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="categoryId"
@@ -177,6 +116,7 @@ export default function EditSubCategoryModal({ params: paramsPromise }: { params
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
+                    disabled={!!defaultCategoryId}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -219,15 +159,11 @@ export default function EditSubCategoryModal({ params: paramsPromise }: { params
               >
                 取消
               </Button>
-              <Button 
-                type="submit" 
-                onClick={form.handleSubmit(onSubmit)}
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? '更新中...' : '更新'}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? '建立中...' : '建立子主題'}
               </Button>
             </div>
-          </div>
+          </form>
         </Form>
       </DialogContent>
     </Dialog>

@@ -13,10 +13,10 @@ import {
 
 const menuItems = [
   { name: '儀表板', path: '/dashboard', icon: LayoutDashboard },
-  { name: '文章維護', path: '/posts', icon: FileText },
-  { name: '主題維護', path: '/categories', icon: Palette },
-  { name: '子主題維護', path: '/sub-categories', icon: Layers },
-  { name: '標籤維護', path: '/tags', icon: Tags }
+  { name: '文章管理', path: '/posts', icon: FileText },
+  { name: '主題管理', path: '/categories', icon: Palette },
+  { name: '子主題管理', path: '/sub-categories', icon: Layers },
+  { name: '標籤管理', path: '/tags', icon: Tags }
 ]
 
 interface AdminLayoutProps {

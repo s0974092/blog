@@ -56,8 +56,9 @@ interface PostSummary {
 
 interface SubCategoriesResponse {
   success: boolean
-  data: SubCategory[]
-  pagination: {
+  data: {
+    items: SubCategory[]
+    total: number
     page: number
     totalPages: number
   }
@@ -128,12 +129,12 @@ export default function SubCategoriesPage() {
     enabled: !!selectedSubCategory,
   })
 
-  const subCategories = subCategoriesResponse?.data || []
+  const subCategories = subCategoriesResponse?.data.items || []
   const postCounts = countsResponse?.counts || {}
   const relatedPosts = postsResponse?.data?.posts || []
-  const pagination = subCategoriesResponse?.pagination || {
-    page: 1,
-    totalPages: 1,
+  const pagination = {
+    page: subCategoriesResponse?.data.page || 1,
+    totalPages: subCategoriesResponse?.data.totalPages || 1,
   }
 
   // 處理搜索

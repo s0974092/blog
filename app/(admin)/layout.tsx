@@ -1,4 +1,4 @@
-import AuthLayout from '@/components/ui/layout/admin/AuthLayout'
+import AuthLayout from "@/components/layout/admin/AuthLayout"
 
 export default function AdminLayout({
   children,
