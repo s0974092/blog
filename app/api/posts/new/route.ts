@@ -3,12 +3,12 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
-// 標籤驗證schema
-const tagSchema = z.object({
-  name: z.string().min(1, '標籤名稱不能為空').max(20, '標籤名稱不能超過20個字符')
+// 文章驗證schema
+const postSchema = z.object({
+  slug: z.string().min(1, 'Slug名稱不能為空')
 })
 
-// POST /api/posts/new - 創建新標籤
+// POST /api/posts/new - 創建新文章
 export async function POST(request: NextRequest) {
   try {
     const user = await getServerUser()
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     
     // 解析並驗證請求數據
     const body = await request.json()
-    const validation = tagSchema.safeParse(body)
+    const validation = postSchema.safeParse(body)
     
     if (!validation.success) {
       return NextResponse.json(
@@ -32,40 +32,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name } = validation.data;
+    const { slug } = validation.data;
 
-    // 檢查標籤名稱是否已存在
-    const existingTag = await prisma.tag.findFirst({
+    // 檢查文章名稱是否已存在
+    const existingSlug = await prisma.post.findFirst({
       where: {
-        name: {
-          equals: name,
+        slug: {
+          equals: slug,
           mode: 'insensitive'
         }
       }
     });
 
-    if (existingTag) {
+    if (existingSlug) {
       return NextResponse.json(
-        { success: false, error: '標籤名稱已存在' },
+        { success: false, error: 'Slug名稱已存在' },
         { status: 400 }
       );
     }
     
-    // 創建文章
+    // 創建文章並同時建立 PostTag 關聯
     const post = await prisma.post.create({
       data: {
         title: body.title,
         content: body.content,
-        category: body.category,
-        subcategory: body.subcategory,
+        categoryId: body.categoryId,
+        subcategoryId: body.subcategoryId,
         slug: body.slug,
-        tags: body.tags,
         authorId: user.id,
-        published: body.published,
-        image: body.image,
-        
-      }
-    })
+        createdBy: user.id,
+        published: body.isPublished,
+        tags: {
+          create: body.tagIds.map((tagId: number) => ({
+            tagId,
+            createdBy: user.id,
+          })),
+        },
+      },
+    });
 
     return NextResponse.json({
       success: true,

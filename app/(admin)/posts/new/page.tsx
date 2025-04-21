@@ -54,15 +54,24 @@ const formSchema = z.object({
   title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
   slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元"),
   slugStatus: z.enum(["success", "error", "validating"]).optional(),
-  content: z.string().min(1, "內容不能為空"),
   categoryId: z.number().optional()
-    .refine((val) => val !== undefined && val > 0, {
-      message: "請選擇主題"
-    }),
+  .refine((val) => val !== undefined && val > 0, {
+    message: "請選擇主題"
+  }),
   subCategoryId: z.number().optional().nullable(),
   tagIds: z.array(z.number()).optional().default([]),
+  content: z.string().min(1, "內容不能為空"),
   isPublished: z.boolean().default(false),
-})
+}).superRefine((values, ctx) => {
+  if (values.slugStatus !== "success") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "此 Slug 已存在",
+      path: ["slug"],
+    })
+  }
+
+});
 
 type FormValues = z.infer<typeof formSchema>
 
@@ -248,6 +257,7 @@ export default function NewPost() {
   const validateSlug = debounce(async (slug: string) => {
     try {
       if (!slug) {
+        form.setValue('slug', ''); // 清空 slug
         form.setValue('slugStatus', undefined);
         return;
       }
@@ -268,7 +278,7 @@ export default function NewPost() {
       toast.error('驗證 Slug 失敗');
       form.setValue('slugStatus', 'error');
     }
-  }, 300); // 設定 debounce 時間為 300 毫秒
+  }, 700); // 設定 debounce 時間為 300 毫秒
 
   // 检查是否有新的标签ID
   useEffect(() => {
@@ -312,7 +322,9 @@ export default function NewPost() {
   const onSubmit = async (values: FormValues) => {
     try {
       console.log("values", values)
-      return;
+      console.log(form.formState.errors);
+      
+      // return;
       setIsSubmitting(true)
       const response = await fetch("/api/posts/new", {
         method: "POST",
@@ -372,7 +384,10 @@ export default function NewPost() {
                         <Input
                           placeholder="請輸入文章標題"
                           {...field}
-                          onChange={(e) => handleTitleChange(e.target.value)}
+                          onChange={(e) => {
+                            handleTitleChange(e.target.value);
+                            form.trigger("title"); // 手動觸發驗證
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -395,13 +410,14 @@ export default function NewPost() {
                               field.onChange(e);
                               if (e.target.value === "") {
                                 form.setValue('slugStatus', undefined); // 清空狀態
-                                return;
+                              } else {
+                                form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
+                                validateSlug(e.target.value);
                               }
-                              form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
-                              validateSlug(e.target.value);
+                              form.trigger("slug"); // 手動觸發驗證
                             }}
                           />
-                          {form.getValues('slugStatus') === undefined && (
+                          {(form.getValues('slugStatus') === undefined) && (
                             <HelpCircle className="absolute right-2 top-2 h-5 w-5 text-gray-500" />
                           )}
                           {form.getValues('slugStatus') === 'success' && (
@@ -432,19 +448,20 @@ export default function NewPost() {
                         <Select
                           onValueChange={(value) => {
                             if (value === 'reset') {
-                              form.setValue('categoryId', undefined)
-                              form.setValue('subCategoryId', undefined)
-                              setSubCategories([])
-                              return
+                              form.setValue('categoryId', undefined);
+                              form.setValue('subCategoryId', undefined);
+                              setSubCategories([]);
+                            } else {
+                              const selectedCategory = categories.find(cat => cat.id.toString() === value);
+                              form.setValue('categoryId', selectedCategory?.id);
+                              handleCategoryChange(Number(value));
                             }
-                            const selectedCategory = categories.find(cat => cat.id.toString() === value)
-                            form.setValue('categoryId', selectedCategory?.id)
-                            handleCategoryChange(Number(value))
+                            form.trigger("categoryId"); // 手動觸發驗證
                           }}
                           value={field.value?.toString() || ""}
                         >
                           <FormControl>
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full" ref={field.ref}>
                               <SelectValue placeholder="請選擇主題" />
                             </SelectTrigger>
                           </FormControl>
