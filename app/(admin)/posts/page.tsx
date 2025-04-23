@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
@@ -15,11 +15,54 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
+import { toast } from "sonner";
+import { format } from 'date-fns';
 
 export default function Posts() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  interface Post {
+    id: string;
+    published: boolean;
+    slug: string;
+    title: string;
+    category?: { name: string };
+    subCategory?: { name: string };
+    tags: { id: string; name: string }[];
+    createdAt: string;
+    updatedAt: string;
+  }
+
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams({
+          search,
+          page: page.toString(),
+          pageSize: "10",
+        });
+        const response = await fetch(`/api/posts?${params}`);
+        if (!response.ok) throw new Error("獲取文章列表失敗");
+        const data = await response.json();
+        console.log("文章列表:", data.data.items);
+        
+        setPosts(data.data.items);
+        setTotalPages(data.data.totalPages);
+      } catch (error) {
+        console.error("獲取文章列表失敗:", error);
+        toast.error("獲取文章列表失敗");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [search, page]);
 
   // 處理搜索
   const handleSearch = (value: string) => {
@@ -75,47 +118,58 @@ export default function Posts() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell>
-                    <Badge variant="success">已發布</Badge>
-                  </TableCell>
-                  <TableCell>example-post</TableCell>
-                  <TableCell>範例文章</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span>主主題</span>
-                      <span className="text-sm text-gray-500">子主題</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Badge variant="secondary">標籤1</Badge>
-                      <Badge variant="secondary">標籤2</Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>2024-04-01 12:00</TableCell>
-                  <TableCell>2024-04-01 12:00</TableCell>
-                  <TableCell>
-                    <div className="flex justify-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="cursor-pointer"
-                      >
-                        <PencilIcon className="w-4 h-4" />
-                        <span className="sr-only">編輯</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="cursor-pointer"
-                      >
-                        <Trash2Icon className="w-4 h-4" />
-                        <span className="sr-only">刪除</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                {posts.map((post) => (
+                  <TableRow key={post.id}>
+                    <TableCell>
+                      <Badge variant={post.published ? "success" : "secondary"}>
+                        {post.published ? "已發布" : "草稿"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{post.slug}</TableCell>
+                    <TableCell>{post.title}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>{post.category?.name || "無"}</span>
+                        {post.subCategory && (
+                          <span className="text-sm text-gray-500">
+                            {post.subCategory.name}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {post.tags && post.tags.map((tag) => (
+                          <Badge key={tag.id} variant="secondary">
+                            {tag.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>{format(new Date(post.createdAt), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                    <TableCell>{format(new Date(post.updatedAt), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                    <TableCell>
+                      <div className="flex justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="cursor-pointer"
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                          <span className="sr-only">編輯</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="cursor-pointer"
+                        >
+                          <Trash2Icon className="w-4 h-4" />
+                          <span className="sr-only">刪除</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
@@ -123,12 +177,12 @@ export default function Posts() {
           <div className="mt-4">
             <Pagination
               currentPage={page}
-              totalPages={10}
+              totalPages={totalPages}
               onPageChange={handlePageChange}
             />
           </div>
         </>
       )}
     </div>
-  )
-} 
+  );
+}
