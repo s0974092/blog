@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, SetStateAction, RefObject } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -8,7 +8,6 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import {
   Form,
@@ -32,6 +31,12 @@ import { debounce } from 'lodash'
 import pinyin from "pinyin"
 import { CheckCircle, XCircle, Loader2, HelpCircle } from "lucide-react"
 import { sub } from "date-fns"
+import dynamic from 'next/dynamic';
+import '@toast-ui/editor/dist/toastui-editor.css';
+import _ from "lodash"
+import { supabase } from "@/lib/supabase"
+
+const ToastEditor = dynamic(() => import('@toast-ui/react-editor').then(mod => mod.Editor), { ssr: false })
 
 // 將類型定義移到頂部
 type Category = {
@@ -75,12 +80,99 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
+function handleEditorImageUpload(blob: string | Blob | ArrayBuffer | FormData | URLSearchParams | File | ArrayBufferView<ArrayBufferLike> | Buffer<ArrayBufferLike> | NodeJS.ReadableStream | ReadableStream<Uint8Array<ArrayBufferLike>>, callback: (arg0: string, arg1: string) => void, setOriginalImageNames: { (value: SetStateAction<string[]>): void; (arg0: (prevPaths: any) => any[]): void }) {
+  return async () => {
+    const fileName = `${Date.now()}-${generatePinyin((blob as File).name)}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('post-content-images')
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('post-content-images')
+        .getPublicUrl(data.path);
+
+      if (!publicUrlData.publicUrl) {
+        throw new Error('無法獲取圖片的公開 URL');
+      }
+
+      callback(publicUrlData.publicUrl, (blob as File).name);
+
+      // 更新原始圖片路徑
+      setOriginalImageNames((prevPaths) => [...prevPaths, fileName]);
+    } catch (error) {
+      console.error('圖片上傳失敗:', error);
+      toast.error('圖片上傳失敗');
+    }
+  };
+}
+
+// 處理圖片清除
+function handleImageCleanup(editorRef: RefObject<any>, originalImageNames: any[], extractImagePaths: { (content: string | undefined): string[]; (arg0: any): any }) {
+  return async () => {
+    const editorInstance = editorRef.current?.getInstance();
+    const markdownContent = editorInstance?.getMarkdown();
+    const htmlContent = editorInstance?.getHTML();
+    console.log("Markdown 內容:", markdownContent);
+    console.log("HTML 內容:", htmlContent);
+
+    const newImagePaths = extractImagePaths(markdownContent);
+    console.log('originalImagePaths', originalImageNames);
+    console.log('newImagePaths', newImagePaths);
+
+    // 比對差異，找出需要刪除的圖片
+    const imagesToDelete = originalImageNames.filter(
+      (path) => !newImagePaths.includes(path)
+    );
+    console.log('imagesToDelete', imagesToDelete);
+
+    // 批量刪除不需要的圖片
+    if (imagesToDelete.length > 0) {
+      try {
+        const { error } = await supabase.storage
+          .from('post-content-images')
+          .remove(imagesToDelete);
+
+        if (error) {
+          console.error(`刪除批量圖片失敗: `, error);
+        } else {
+          console.log(`刪除批量圖片成功！`);
+        }
+      } catch (error) {
+        console.error(`刪除圖片時發生錯誤: ${error}`);
+      }
+    } else {
+      console.log('沒有需要刪除的圖片');
+    }
+  };
+}
+
+function generatePinyin(title: string) {
+  return pinyin(title, {
+    style: pinyin.STYLE_NORMAL, // 使用普通拼音樣式
+  })
+    .flat() // 將多維數組展平
+    .join('-') // 使用連字符連接
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-') // 移除非字母、數字和連字符的字符
+    .replace(/(^-|-$)/g, ''); // 移除開頭和結尾的連字符
+}
+
 export default function NewPost() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [subCategories, setSubCategories] = useState<SubCategory[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const editorRef = useRef<any>(null);
   const { 
     newCategoryId, 
     setNewCategoryId, 
@@ -91,6 +183,7 @@ export default function NewPost() {
   } = useCategoryContext()
   const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null)
   const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
+  const [originalImageNames, setOriginalImageNames] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -105,6 +198,25 @@ export default function NewPost() {
       isPublished: false,
     },
   })
+
+  useEffect(() => {
+    // 初始化時從內容中提取圖片路徑
+    const editorInstance = editorRef.current?.getInstance();
+    const initialContent = editorInstance?.getMarkdown();
+    const imagePaths = extractImagePaths(initialContent);
+    setOriginalImageNames(imagePaths);
+  }, []);
+
+  const extractImagePaths = (content: string | undefined): string[] => {
+    if (!content) return [];
+    const regex = /!\[.*?\]\(.*?\/([^\/]+)\)/g; // 匹配 Markdown 圖片語法並提取文件名
+    const paths: string[] = [];
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      paths.push(match[1]); // 只提取文件名
+    }
+    return paths;
+  };
 
   // 載入主題列表
   useEffect(() => {
@@ -239,14 +351,7 @@ export default function NewPost() {
       form.setValue('slugStatus', undefined); // 清空狀態
       return;
     }
-    const slug = pinyin(title, {
-      style: pinyin.STYLE_NORMAL, // 使用普通拼音樣式
-    })
-      .flat() // 將多維數組展平
-      .join('-') // 使用連字符連接
-      .toLowerCase()
-      .replace(/[^a-z0-9-]+/g, '-') // 移除非字母、數字和連字符的字符
-      .replace(/(^-|-$)/g, ''); // 移除開頭和結尾的連字符
+    const slug = generatePinyin(title);
 
     form.setValue('slug', slug);
     form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
@@ -321,10 +426,11 @@ export default function NewPost() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      console.log("values", values)
-      console.log(form.formState.errors);
+      const cleanupImages = handleImageCleanup(editorRef, originalImageNames, extractImagePaths);
+      await cleanupImages();
+
+      console.log(values);
       
-      // return;
       setIsSubmitting(true)
       const response = await fetch("/api/posts/new", {
         method: "POST",
@@ -603,10 +709,25 @@ export default function NewPost() {
                   <FormItem>
                     <FormLabel>內容</FormLabel>
                     <FormControl>
-                      <Textarea
+                      <ToastEditor
+                        ref={editorRef}
+                        initialValue={field.value || ' '}
+                        previewStyle="tab"
+                        height="400px"
+                        initialEditType="wysiwyg"
+                        useCommandShortcut={true}
                         placeholder="請輸入文章內容"
-                        className="min-h-[300px]"
-                        {...field}
+                        onChange={() => {
+                          const editorInstance = editorRef.current?.getInstance();
+                          const markdownContent = editorInstance?.getMarkdown();
+                          field.onChange(markdownContent);
+                          form.trigger("content"); // 手動觸發驗證
+                        }}
+                        hooks={{
+                          addImageBlobHook: async (blob: string | Blob | ArrayBuffer | FormData | URLSearchParams | File | ArrayBufferView<ArrayBufferLike> | Buffer<ArrayBufferLike> | NodeJS.ReadableStream | ReadableStream<Uint8Array<ArrayBufferLike>>, callback: (arg0: string, arg1: string) => void) => {
+                            await handleEditorImageUpload(blob, callback, setOriginalImageNames)();
+                          },
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

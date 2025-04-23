@@ -116,7 +116,7 @@ export function MultiSelect({
       </div>
       <div className="relative mt-2">
         {open ? (
-          <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+          <div className="absolute top-0 z-[9999] w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandPrimitive.List className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden p-1", className)}>
               {selectables.length > 0 ? (
                 selectables.map((option) => (
@@ -144,4 +144,4 @@ export function MultiSelect({
       </div>
     </Command>
   )
-} 
+}
