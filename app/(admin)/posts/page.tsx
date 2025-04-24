@@ -17,8 +17,10 @@ import {
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation'
 
 export default function Posts() {
+  const router = useRouter()
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +30,7 @@ export default function Posts() {
     slug: string;
     title: string;
     category?: { name: string };
-    subCategory?: { name: string };
+    subcategory?: { name: string };
     tags: { id: string; name: string }[];
     createdAt: string;
     updatedAt: string;
@@ -76,7 +78,7 @@ export default function Posts() {
   };
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">文章管理</h1>
         <div className="flex items-center gap-4">
@@ -88,12 +90,10 @@ export default function Posts() {
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
-          <Link href="/posts/new">
-            <Button className="cursor-pointer">
-              <PlusIcon className="w-4 h-4 mr-2" />
-              新增文章
-            </Button>
-          </Link>
+          <Button className="cursor-pointer" onClick={() => router.push('/posts/new')}>
+            <PlusIcon className="w-4 h-4 mr-2" />
+            新增文章
+          </Button>
         </div>
       </div>
 
@@ -130,9 +130,9 @@ export default function Posts() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span>{post.category?.name || "無"}</span>
-                        {post.subCategory && (
+                        {post.subcategory && (
                           <span className="text-sm text-gray-500">
-                            {post.subCategory.name}
+                            {post.subcategory.name}
                           </span>
                         )}
                       </div>
@@ -154,6 +154,7 @@ export default function Posts() {
                           variant="ghost"
                           size="icon"
                           className="cursor-pointer"
+                          onClick={() => router.push(`/posts/${post.id}`)}
                         >
                           <PencilIcon className="w-4 h-4" />
                           <span className="sr-only">編輯</span>

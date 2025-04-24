@@ -38,6 +38,18 @@ export async function GET(request: NextRequest) {
                 },
             },
           },
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          subcategory: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       }),
       prisma.post.count({ where }),

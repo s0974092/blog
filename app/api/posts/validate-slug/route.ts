@@ -4,14 +4,18 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
+  const excludePostId = searchParams.get('excludePostId');
 
   if (!slug) {
     return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
   }
 
   try {
-    const exists = await prisma.post.findUnique({
-      where: { slug },
+    const exists = await prisma.post.findFirst({
+      where: {
+        slug,
+        NOT: excludePostId ? { id: excludePostId } : undefined,
+      },
     });
 
     return NextResponse.json({ exists: !!exists });
