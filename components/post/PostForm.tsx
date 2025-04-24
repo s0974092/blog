@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { PlusIcon } from "lucide-react"
-import { debounce, set } from 'lodash'
+import { debounce } from 'lodash'
 import pinyin from "pinyin"
 import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft } from "lucide-react"
 import dynamic from 'next/dynamic';
@@ -34,17 +34,12 @@ import '@toast-ui/editor/dist/toastui-editor.css';
 import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
 
+// 將類型定義移到頂部
 interface PostFormProps {
   mode: 'new' | 'edit';
   postId?: string;
 }
 
-const ToastEditor = dynamic(() => import('@toast-ui/react-editor').then(mod => mod.Editor), { 
-  ssr: false,
-  loading: () => <div className='flex justify-center items-center h-64'><Loader2 className='w-8 h-8 animate-spin' /></div>
-});
-
-// 將類型定義移到頂部
 type Category = {
   id: number
   name: string
@@ -61,22 +56,28 @@ type Tag = {
   name: string
 }
 
+type FormValues = z.infer<typeof formSchema>
+
+const ToastEditor = dynamic(() => import('@toast-ui/react-editor').then(mod => mod.Editor), { 
+  ssr: false,
+  loading: () => <div className='flex justify-center items-center h-64'><Loader2 className='w-8 h-8 animate-spin' /></div>
+});
+
 const formSchema = z.object({
   title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
   slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元").optional(),
   slugStatus: z.enum(["success", "error", "validating"]).optional(),
   categoryId: z.number().optional()
-  .refine((val) => val !== undefined && val > 0, {
-    message: "請選擇主題"
-  }),
+    .refine((val) => val !== undefined && val > 0, {
+      message: "請選擇主題"
+    }),
   subCategoryId: z.number().optional().nullable(),
   tagIds: z.array(z.number()).optional().default([]),
   content: z.string().min(1, "內容不能為空"),
   isPublished: z.boolean().default(false),
 });
 
-type FormValues = z.infer<typeof formSchema>
-
+// 處理圖片上傳
 function handleEditorImageUpload(blob: string | Blob | ArrayBuffer | FormData | URLSearchParams | File | ArrayBufferView<ArrayBufferLike> | Buffer<ArrayBufferLike> | NodeJS.ReadableStream | ReadableStream<Uint8Array<ArrayBufferLike>>, callback: (arg0: string, arg1: string) => void, setOriginalImageNames: { (value: SetStateAction<string[]>): void; (arg0: (prevPaths: any) => any[]): void }) {
   return async () => {
     const fileName = `${Date.now()}-${generatePinyin((blob as File).name)}`;
@@ -152,6 +153,7 @@ function handleImageCleanup(editorRef: RefObject<any>, originalImageNames: any[]
   };
 }
 
+// 生成拼音
 function generatePinyin(title: string) {
   return pinyin(title, {
     style: pinyin.STYLE_NORMAL, // 使用普通拼音樣式
@@ -162,12 +164,19 @@ function generatePinyin(title: string) {
     .replace(/[^a-z0-9-]+/g, '-') // 移除非字母、數字和連字符的字符
     .replace(/(^-|-$)/g, ''); // 移除開頭和結尾的連字符
 }
+
 const PostForm = ({ mode, postId }: PostFormProps) => {
     const router = useRouter()
+    // 新增一個狀態變數來追蹤是否是初次載入
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
     const [subCategories, setSubCategories] = useState<SubCategory[]>([])
     const [tags, setTags] = useState<Tag[]>([])
+    const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null)
+    const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
+    const [originalImageNames, setOriginalImageNames] = useState<string[]>([]);
+    
     const editorRef = useRef<any>(null);
     const { 
       newCategoryId, 
@@ -177,12 +186,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       newTagId: contextNewTagId, 
       setNewTagId: contextSetNewTagId 
     } = useCategoryContext()
-    const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null)
-    const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
-    const [originalImageNames, setOriginalImageNames] = useState<string[]>([]);
-
-    // 新增一個狀態變數來追蹤是否是初次載入
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
   
     const form = useForm<FormValues>({
       resolver: zodResolver(formSchema),
@@ -198,25 +201,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       },
     })
   
-    useEffect(() => {
-      // 初始化時從內容中提取圖片路徑
-      const editorInstance = editorRef.current?.getInstance();
-      const initialContent = editorInstance?.getMarkdown();
-      const imagePaths = extractImagePaths(initialContent);
-      setOriginalImageNames(imagePaths);
-    }, []);
-  
-    const extractImagePaths = (content: string | undefined): string[] => {
-      if (!content) return [];
-      const regex = /!\[.*?\]\(.*?\/([^\/]+)\)/g; // 匹配 Markdown 圖片語法並提取文件名
-      const paths: string[] = [];
-      let match;
-      while ((match = regex.exec(content)) !== null) {
-        paths.push(match[1]); // 只提取文件名
-      }
-      return paths;
-    };
-  
     // 載入主題和標籤列表
     useEffect(() => {
       const fetchInitialData = async () => {
@@ -224,46 +208,49 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           const response = await fetch('/api/initial-data');
           if (!response.ok) throw new Error('獲取初始數據失敗');
           const data = await response.json();
-          console.log(data);
-          
+          // 獲取主題和標籤列表
           setCategories(data.data.categories);
-          // setSubCategories(data.data.subCategories);
           setTags(data.data.tags);
-
-          // 如果是編輯模式，則載入文章詳情
-          console.log(postId);
           
+          // 如果是編輯模式，則載入文章詳情
           if (mode === 'edit' && postId) {
             const postResponse = await fetch(`/api/posts/${postId}`);
             if (!postResponse.ok) throw new Error('獲取文章詳情失敗');
             const postData = await postResponse.json();
+            // 獲取文章詳情
             const post = postData.data;
             console.log(post);
-            
+            // 設置表單初始值
             form.setValue('title', post.title);
             form.setValue('slug', post.slug);
             form.setValue('slugStatus', post.slugStatus);
+            form.setValue('tagIds', post.tags.map((tag: { id: number, name: string }) => tag.id));
+            form.setValue('isPublished', post.published);
+
+            // 設置文章內容
             form.setValue('content', post.content);
             const editorInstance = editorRef.current?.getInstance();
             editorInstance?.setMarkdown(post.content);
-            // form.trigger("content");
+
+            // 設置主題和子主題
             form.setValue('categoryId', post.categoryId);
-            // form.setValue('subCategoryId', post.subcategoryId);
             setNewSubCategoryId(post.subcategoryId);
-            // if (post.subcategoryId) {
-              handleCategoryChange(post.categoryId);
-            // }
-            // console.log('here');
-            form.setValue('tagIds', post.tags.map((tag: { id: number, name: string }) => tag.id));
-            form.setValue('isPublished', post.published);
+            handleCategoryChange(post.categoryId);
           }
-  
         } catch {
           toast.error('獲取初始數據失敗');
         }
       };
   
       fetchInitialData();
+    }, []);
+
+    // 初始化時從內容中提取圖片路徑
+    useEffect(() => {
+      const editorInstance = editorRef.current?.getInstance();
+      const initialContent = editorInstance?.getMarkdown();
+      const imagePaths = extractImagePaths(initialContent);
+      setOriginalImageNames(imagePaths);
     }, []);
   
     // 處理新增的主題
@@ -290,7 +277,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       }
     }, [newCategoryId, setNewCategoryId])
   
-    // 當 categories 更新後，設置表單值
+    // 當主題更新後，設置表單值
     useEffect(() => {
       console.log(newlyAddedCategoryId);
       
@@ -325,12 +312,11 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           }
         };
         fetchNewSubCategory();
-        // setNewSubCategoryId(null);
+        setNewSubCategoryId(null);
       }
     }, [newSubCategoryId, setNewSubCategoryId])
   
-  
-    // 當 subCategories 更新後，設置表單值
+    // 當子主題更新後，設置表單值
     useEffect(() => {
       console.log(newlyAddedSubCategoryId);
 
@@ -353,7 +339,58 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         }
       }
     }, [subCategories, newlyAddedSubCategoryId, form, isInitialLoad])
+
+    // 檢查是否有新的標籤ID
+    useEffect(() => {
+      console.log("從 Context 獲取的新標籤 ID:", contextNewTagId);
+      
+      if (contextNewTagId) {
+        // 添加新標籤ID到表單
+        const currentTagIds = form.getValues('tagIds') || []
+        console.log("當前 tagIds:", currentTagIds);
+        
+        if (!currentTagIds.includes(contextNewTagId)) {
+          const updatedTagIds = [...currentTagIds, contextNewTagId]
+          console.log("更新後的 tagIds:", updatedTagIds);
+          
+          form.setValue('tagIds', updatedTagIds)
+          
+          // 確保新標籤在標籤列表中
+          const fetchNewTag = async () => {
+            try {
+              const response = await fetch(`/api/tags/${contextNewTagId}`)
+              if (!response.ok) throw new Error('獲取標籤詳情失敗')
+              const data = await response.json()
+              
+              // 如果標籤不在列表中，添加到列表中
+              if (!tags.some(tag => tag.id === String(contextNewTagId))) {
+                setTags(prevTags => [...prevTags, data.data])
+              }
+            } catch (error) {
+              console.error('獲取新標籤詳情失敗:', error)
+            }
+          }
+          
+          fetchNewTag()
+        }
+        
+        // 清除 Context 中的新標籤 ID
+        contextSetNewTagId(null);
+      }
+    }, [form, tags, contextNewTagId, contextSetNewTagId])
   
+    // 提取 Markdown 中的圖片路徑
+    const extractImagePaths = (content: string | undefined): string[] => {
+      if (!content) return [];
+      const regex = /!\[.*?\]\(.*?\/([^\/]+)\)/g; // 匹配 Markdown 圖片語法並提取文件名
+      const paths: string[] = [];
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        paths.push(match[1]); // 只提取文件名
+      }
+      return paths;
+    };
+
     // 當主題改變時載入對應的子主題
     const handleCategoryChange = async (categoryId: number) => {
       if (!categoryId) {
@@ -426,45 +463,30 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       }
     }, 700); // 設定 debounce 時間為 700 毫秒
   
-    // 检查是否有新的标签ID
-    useEffect(() => {
-      console.log("從 Context 獲取的新標籤 ID:", contextNewTagId);
-      
-      if (contextNewTagId) {
-        // 添加新标签ID到表单
-        const currentTagIds = form.getValues('tagIds') || []
-        console.log("當前 tagIds:", currentTagIds);
-        
-        if (!currentTagIds.includes(contextNewTagId)) {
-          const updatedTagIds = [...currentTagIds, contextNewTagId]
-          console.log("更新後的 tagIds:", updatedTagIds);
-          
-          form.setValue('tagIds', updatedTagIds)
-          
-          // 確保新標籤在標籤列表中
-          const fetchNewTag = async () => {
-            try {
-              const response = await fetch(`/api/tags/${contextNewTagId}`)
-              if (!response.ok) throw new Error('獲取標籤詳情失敗')
-              const data = await response.json()
-              
-              // 如果標籤不在列表中，添加到列表中
-              if (!tags.some(tag => tag.id === String(contextNewTagId))) {
-                setTags(prevTags => [...prevTags, data.data])
-              }
-            } catch (error) {
-              console.error('獲取新標籤詳情失敗:', error)
-            }
-          }
-          
-          fetchNewTag()
-        }
-        
-        // 清除 Context 中的新標籤 ID
-        contextSetNewTagId(null);
+    // 新增主題
+    const handleAddCategory = () => {
+      if (mode === 'edit') {
+        router.push(`/posts/${postId}/new/category`, { scroll: false })
+        return
       }
-    }, [form, tags, contextNewTagId, contextSetNewTagId])
+      router.push('/posts/new/category', { scroll: false })
+    }
   
+    // 新增子主題
+    const handleAddSubCategory = () => {
+      const categoryId = form.getValues('categoryId')
+      if (!categoryId) {
+        toast.error('請先選擇主題')
+        return
+      }
+      if (mode === 'edit') {
+        router.push(`/posts/${postId}/new/sub-category?categoryId=${categoryId}`, { scroll: false })
+        return
+      }
+      router.push(`/posts/new/sub-category?categoryId=${categoryId}`, { scroll: false })
+    }
+  
+    // 提交表單
     const onSubmit = async (values: FormValues) => {
       console.log(values.slugStatus);
       
@@ -523,226 +545,247 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         setIsSubmitting(false);
       }
     }
-  
-    // 新增主題
-    const handleAddCategory = () => {
-      if (mode === 'edit') {
-        router.push(`/posts/${postId}/new/category`, { scroll: false })
-        return
-      }
-      router.push('/posts/new/category', { scroll: false })
-    }
-  
-    // 新增子主題
-    const handleAddSubCategory = () => {
-      const categoryId = form.getValues('categoryId')
-      if (!categoryId) {
-        toast.error('請先選擇主題')
-        return
-      }
-      if (mode === 'edit') {
-        router.push(`/posts/${postId}/new/sub-category?categoryId=${categoryId}`, { scroll: false })
-        return
-      }
-      router.push(`/posts/new/sub-category?categoryId=${categoryId}`, { scroll: false })
-    }
 
-  return (
-    <div className="container mx-auto">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
-            <ArrowLeft className="cursor-pointer" onClick={() => router.back()} />
-            <h1 className="text-2xl font-bold">{mode === 'new' ? '新增文章' : '編輯文章'}</h1>
+    return (
+      <div className="container mx-auto">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2">
+              <ArrowLeft className="cursor-pointer" onClick={() => router.back()} />
+              <h1 className="text-2xl font-bold">{mode === 'new' ? '新增文章' : '編輯文章'}</h1>
+            </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>標題</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="請輸入文章標題"
-                          {...field}
-                          onChange={(e) => {
-                            handleTitleChange(e.target.value);
-                            form.trigger("title"); // 手動觸發驗證
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slug</FormLabel>
-                      <FormControl>
-                        <div className="relative">
+          <div className="bg-white rounded-lg shadow p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>標題</FormLabel>
+                        <FormControl>
                           <Input
-                            placeholder="請輸入文章 Slug"
+                            placeholder="請輸入文章標題"
                             {...field}
                             onChange={(e) => {
-                              field.onChange(e);
-                              if (e.target.value === "") {
-                                form.setValue('slugStatus', undefined); // 清空狀態
-                              } else {
-                                form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
-                                validateSlug(e.target.value);
-                              }
-                              form.trigger("slug"); // 手動觸發驗證
-                            }}
-                            onBlur={() => {
-                              if (field.value === '') {
-                                form.setValue('slugStatus', undefined); // 清空狀態
-                              } else {
-                                validateSlug(field.value || '');
-                              }
+                              handleTitleChange(e.target.value);
+                              form.trigger("title"); // 手動觸發驗證
                             }}
                           />
-                          {(form.getValues('slugStatus') === undefined) && (
-                            <HelpCircle className="absolute right-2 top-2 h-5 w-5 text-gray-500" />
-                          )}
-                          {form.getValues('slugStatus') === 'success' && (
-                            <CheckCircle className="absolute right-2 top-2 h-5 w-5 text-green-500" />
-                          )}
-                          {form.getValues('slugStatus') === 'error' && (
-                            <XCircle className="absolute right-2 top-2 h-5 w-5 text-red-500" />
-                          )}
-                          {form.getValues('slugStatus') === 'validating' && (
-                            <Loader2 className="absolute right-2 top-2 h-5 w-5 text-blue-500 animate-spin" />
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div className="grid grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>主題</FormLabel>
-                      <div className="flex gap-2 items-center">
-                        <Select
-                          onValueChange={(value) => {
-                            if (value === 'reset') {
-                              form.setValue('categoryId', undefined);
-                              form.setValue('subCategoryId', undefined);
-                              setSubCategories([]);
-                            } else {
-                              const selectedCategory = categories.find(cat => cat.id.toString() === value);
-                              form.setValue('categoryId', selectedCategory?.id);
-                              handleCategoryChange(Number(value));
-                            }
-                            form.trigger("categoryId"); // 手動觸發驗證
-                          }}
-                          value={field.value?.toString() || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full" ref={field.ref}>
-                              <SelectValue placeholder="請選擇主題" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-[300px] overflow-y-auto">
-                            {categories.length > 0 && (
-                              <SelectItem key={0} value="reset">
-                                請選擇主題
-                              </SelectItem>
-                            )}
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={category.id.toString()}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={handleAddCategory}
-                        >
-                          <PlusIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="subCategoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>子主題</FormLabel>
-                      <div className="flex gap-2 items-center">
-                        <Select
-                          onValueChange={(value) => {
-                            console.log(value);
-                            
-                            if (value === 'reset') {
-                              form.setValue('subCategoryId', undefined)
-                              return
-                            }
-                            const selectedSubCategory = subCategories.find(subCat => subCat.id.toString() === value)
-                            form.setValue('subCategoryId', selectedSubCategory?.id || undefined)
-                          }}
-                          value={field.value?.toString() || ""}
-                          disabled={!form.getValues('categoryId')}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full" disabled={subCategories?.length === 0}>
-                              <SelectValue
-                                placeholder={
-                                  !form.getValues('categoryId') 
-                                    ? "請先選擇主題" 
-                                    : (subCategories?.length === 0 ? "無可用的子主題" : "請選擇子主題")
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slug</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              placeholder="請輸入文章 Slug"
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                if (e.target.value === "") {
+                                  form.setValue('slugStatus', undefined); // 清空狀態
+                                } else {
+                                  form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
+                                  validateSlug(e.target.value);
                                 }
-                              />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-[300px] overflow-y-auto">
-                            {subCategories?.length === 0 ? (
-                              <SelectItem value="no-data" disabled>
-                                無可用的子主題
-                              </SelectItem>
-                            ) : (
-                              <>
-                                <SelectItem key={0} value="reset">
-                                  請選擇子主題
-                                </SelectItem>
-                                {subCategories && subCategories.map((subCategory) => (
-                                  <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
-                                    {subCategory.name}
-                                  </SelectItem>
-                                ))}
-                              </>
+                                form.trigger("slug"); // 手動觸發驗證
+                              }}
+                              onBlur={() => {
+                                if (field.value === '') {
+                                  form.setValue('slugStatus', undefined); // 清空狀態
+                                } else {
+                                  validateSlug(field.value || '');
+                                }
+                              }}
+                            />
+                            {(form.getValues('slugStatus') === undefined) && (
+                              <HelpCircle className="absolute right-2 top-2 h-5 w-5 text-gray-500" />
                             )}
-                          </SelectContent>
-                        </Select>
+                            {form.getValues('slugStatus') === 'success' && (
+                              <CheckCircle className="absolute right-2 top-2 h-5 w-5 text-green-500" />
+                            )}
+                            {form.getValues('slugStatus') === 'error' && (
+                              <XCircle className="absolute right-2 top-2 h-5 w-5 text-red-500" />
+                            )}
+                            {form.getValues('slugStatus') === 'validating' && (
+                              <Loader2 className="absolute right-2 top-2 h-5 w-5 text-blue-500 animate-spin" />
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>主題</FormLabel>
+                        <div className="flex gap-2 items-center">
+                          <Select
+                            onValueChange={(value) => {
+                              if (value === 'reset') {
+                                form.setValue('categoryId', undefined);
+                                form.setValue('subCategoryId', undefined);
+                                setSubCategories([]);
+                              } else {
+                                const selectedCategory = categories.find(cat => cat.id.toString() === value);
+                                form.setValue('categoryId', selectedCategory?.id);
+                                handleCategoryChange(Number(value));
+                              }
+                              form.trigger("categoryId"); // 手動觸發驗證
+                            }}
+                            value={field.value?.toString() || ""}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full" ref={field.ref}>
+                                <SelectValue placeholder="請選擇主題" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-[300px] overflow-y-auto">
+                              {categories.length > 0 && (
+                                <SelectItem key={0} value="reset">
+                                  請選擇主題
+                                </SelectItem>
+                              )}
+                              {categories.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={handleAddCategory}
+                          >
+                            <PlusIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="subCategoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>子主題</FormLabel>
+                        <div className="flex gap-2 items-center">
+                          <Select
+                            onValueChange={(value) => {
+                              console.log(value);
+                              
+                              if (value === 'reset') {
+                                form.setValue('subCategoryId', undefined)
+                                return
+                              }
+                              const selectedSubCategory = subCategories.find(subCat => subCat.id.toString() === value)
+                              form.setValue('subCategoryId', selectedSubCategory?.id || undefined)
+                            }}
+                            value={field.value?.toString() || ""}
+                            disabled={!form.getValues('categoryId')}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full" disabled={subCategories?.length === 0}>
+                                <SelectValue
+                                  placeholder={
+                                    !form.getValues('categoryId') 
+                                      ? "請先選擇主題" 
+                                      : (subCategories?.length === 0 ? "無可用的子主題" : "請選擇子主題")
+                                  }
+                                />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-[300px] overflow-y-auto">
+                              {subCategories?.length === 0 ? (
+                                <SelectItem value="no-data" disabled>
+                                  無可用的子主題
+                                </SelectItem>
+                              ) : (
+                                <>
+                                  <SelectItem key={0} value="reset">
+                                    請選擇子主題
+                                  </SelectItem>
+                                  {subCategories && subCategories.map((subCategory) => (
+                                    <SelectItem key={subCategory.id} value={subCategory.id.toString()}>
+                                      {subCategory.name}
+                                    </SelectItem>
+                                  ))}
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={handleAddSubCategory}
+                            disabled={!form.getValues('categoryId')}
+                          >
+                            <PlusIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="tagIds"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>標籤</FormLabel>
+                      <div className="flex gap-2 items-start">
+                        <FormControl>
+                          <MultiSelect
+                            placeholder="請選擇標籤"
+                            options={tags.map(tag => ({
+                              label: tag.name,
+                              value: String(tag.id)
+                            }))}
+                            selected={field.value ? field.value.map(String) : []}
+                            onChange={(value) => {
+                              // 将字符串ID转换为数字
+                              const numericValues = value.map(Number)
+                              field.onChange(numericValues)
+                              form.trigger('tagIds')
+                            }}
+                          />
+                        </FormControl>
                         <Button
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={handleAddSubCategory}
-                          disabled={!form.getValues('categoryId')}
+                          onClick={() => {
+                            if (mode === 'edit') {
+                              router.push(`/posts/${postId}/new/tag`, { scroll: false })
+                            } else if (mode === 'new') {
+                              router.push('/posts/new/tag', { scroll: false })
+                            }
+                          }}
                         >
                           <PlusIcon className="h-4 w-4" />
                         </Button>
@@ -751,126 +794,82 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <FormField
-                control={form.control}
-                name="tagIds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>標籤</FormLabel>
-                    <div className="flex gap-2 items-start">
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>內容</FormLabel>
                       <FormControl>
-                        <MultiSelect
-                          placeholder="請選擇標籤"
-                          options={tags.map(tag => ({
-                            label: tag.name,
-                            value: String(tag.id)
-                          }))}
-                          selected={field.value ? field.value.map(String) : []}
-                          onChange={(value) => {
-                            // 将字符串ID转换为数字
-                            const numericValues = value.map(Number)
-                            field.onChange(numericValues)
-                            form.trigger('tagIds')
+                        <ToastEditor
+                          ref={editorRef}
+                          initialValue={field.value || ' '}
+                          // previewStyle="tab"
+                          height="400px"
+                          initialEditType="wysiwyg"
+                          useCommandShortcut={true}
+                          placeholder="請輸入文章內容"
+                          onChange={() => {
+                            const editorInstance = editorRef.current?.getInstance();
+                            const markdownContent = editorInstance?.getMarkdown();
+                            field.onChange(markdownContent);
+                            form.trigger("content"); // 手動觸發驗證
+                          }}
+                          hooks={{
+                            addImageBlobHook: async (blob: string | Blob | ArrayBuffer | FormData | URLSearchParams | File | ArrayBufferView<ArrayBufferLike> | Buffer<ArrayBufferLike> | NodeJS.ReadableStream | ReadableStream<Uint8Array<ArrayBufferLike>>, callback: (arg0: string, arg1: string) => void) => {
+                              await handleEditorImageUpload(blob, callback, setOriginalImageNames)();
+                            },
                           }}
                         />
                       </FormControl>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          if (mode === 'edit') {
-                            router.push(`/posts/${postId}/new/tag`, { scroll: false })
-                          } else if (mode === 'new') {
-                            router.push('/posts/new/tag', { scroll: false })
-                          }
-                        }}
-                      >
-                        <PlusIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>內容</FormLabel>
-                    <FormControl>
-                      <ToastEditor
-                        ref={editorRef}
-                        initialValue={field.value || ' '}
-                        // previewStyle="tab"
-                        height="400px"
-                        initialEditType="wysiwyg"
-                        useCommandShortcut={true}
-                        placeholder="請輸入文章內容"
-                        onChange={() => {
-                          const editorInstance = editorRef.current?.getInstance();
-                          const markdownContent = editorInstance?.getMarkdown();
-                          field.onChange(markdownContent);
-                          form.trigger("content"); // 手動觸發驗證
-                        }}
-                        hooks={{
-                          addImageBlobHook: async (blob: string | Blob | ArrayBuffer | FormData | URLSearchParams | File | ArrayBufferView<ArrayBufferLike> | Buffer<ArrayBufferLike> | NodeJS.ReadableStream | ReadableStream<Uint8Array<ArrayBufferLike>>, callback: (arg0: string, arg1: string) => void) => {
-                            await handleEditorImageUpload(blob, callback, setOriginalImageNames)();
-                          },
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isPublished"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel>發布狀態</FormLabel>
-                      <div className="text-sm text-gray-500">
-                        選擇是否要立即發布文章
+                <FormField
+                  control={form.control}
+                  name="isPublished"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel>發布狀態</FormLabel>
+                        <div className="text-sm text-gray-500">
+                          選擇是否要立即發布文章
+                        </div>
                       </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => { 
-                    console.log("当前表单值:", form.getValues()); 
-                    router.back();
-                  }}
-                >
-                  取消
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (mode === 'new' ? '新增中...' : '更新中...') : (mode === 'new' ? '新增文章' : '更新文章')}
-                </Button>
-              </div>
-            </form>
-          </Form>
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => { 
+                      console.log("当前表单值:", form.getValues()); 
+                      router.back();
+                    }}
+                  >
+                    取消
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (mode === 'new' ? '新增中...' : '更新中...') : (mode === 'new' ? '新增文章' : '更新文章')}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
 }
 
 export default PostForm
