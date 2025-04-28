@@ -72,6 +72,9 @@ export const CrepeEditor: FC<MilkdownEditorProps> = ({
                 [Crepe.Feature.ImageBlock]: true
             },
             featureConfigs: {
+                [Crepe.Feature.Placeholder]: {
+                    text: '撰寫 或 輸入 \'/\' 選擇其他類型'
+                },
                 [Crepe.Feature.ImageBlock]: {
                     onUpload: async (file: File) => {
                         return new Promise<string>((resolve, reject) => {
