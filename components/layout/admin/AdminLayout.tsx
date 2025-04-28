@@ -38,9 +38,9 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       {/* 側邊菜單 */}
-      <div className={`bg-gray-900 text-white transition-all duration-300 ${
+      <div className={`bg-gray-900 text-white transition-all duration-300 flex flex-col ${
         collapsed ? 'w-16' : 'w-48'
       }`}>
         <div className="p-4 flex justify-between items-center">
@@ -52,7 +52,7 @@ export default function AdminLayout({
             {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
-        <nav className="mt-4">
+        <nav className="mt-4 flex-1">
           <TooltipProvider>
             {menuItems.map((item) => {
               const Icon = item.icon
@@ -88,7 +88,7 @@ export default function AdminLayout({
       </div>
       
       {/* 主要內容區域 */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 flex flex-col min-h-screen">
           {/* 用戶資料區域 */}
           {userProfile && (
             <div className="px-6 py-4 bg-gray-200">
@@ -97,8 +97,10 @@ export default function AdminLayout({
           )}
           
           {/* 主要內容 */}
-          <div className="p-6">
-            {children}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6">
+              {children}
+            </div>
           </div>
       </div>
     </div>
