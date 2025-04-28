@@ -67,4 +67,41 @@ export async function GET(
       { status: 500 }
     )
   }
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const id = parseInt((await context.params).id)
+    
+    // 檢查子主題是否存在
+    const subCategory = await prisma.subcategory.findUnique({
+      where: { id },
+    })
+    
+    if (!subCategory) {
+      return NextResponse.json(
+        { success: false, error: '找不到子主題' },
+        { status: 404 }
+      )
+    }
+    
+    // 刪除子主題
+    await prisma.subcategory.delete({
+      where: { id },
+    })
+    
+    return NextResponse.json({
+      success: true,
+      message: '子主題刪除成功'
+    })
+  } catch (error) {
+    console.error('刪除子主題失敗:', error)
+    return NextResponse.json(
+      { success: false, error: '刪除子主題失敗' },
+      { status: 500 }
+    )
+  }
 } 
