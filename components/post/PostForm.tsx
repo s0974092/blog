@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, SetStateAction, RefObject } from "react"
+import { useState, useEffect, SetStateAction, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -27,12 +27,12 @@ import {
 import { MultiSelect } from "@/components/ui/multi-select"
 import { PlusIcon } from "lucide-react"
 import { debounce } from 'lodash'
-import pinyin from "pinyin"
-import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft } from "lucide-react"
+import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Fullscreen, Minimize } from "lucide-react"
 import dynamic from 'next/dynamic';
-import '@toast-ui/editor/dist/toastui-editor.css';
 import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
+import { generatePinyin } from "@/lib/utils";
+import { CrepeEditor } from "./crepe-editor";
 
 // 將類型定義移到頂部
 interface PostFormProps {
@@ -58,11 +58,6 @@ type Tag = {
 
 type FormValues = z.infer<typeof formSchema>
 
-const ToastEditor = dynamic(() => import('@toast-ui/react-editor').then(mod => mod.Editor), { 
-  ssr: false,
-  loading: () => <div className='flex justify-center items-center h-64'><Loader2 className='w-8 h-8 animate-spin' /></div>
-});
-
 const formSchema = z.object({
   title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
   slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元").optional(),
@@ -76,108 +71,19 @@ const formSchema = z.object({
   content: z.string().min(1, "內容不能為空"),
   isPublished: z.boolean().default(false),
 });
-
-// 處理圖片上傳
-function handleEditorImageUpload(blob: string | Blob | ArrayBuffer | FormData | URLSearchParams | File | ArrayBufferView<ArrayBufferLike> | Buffer<ArrayBufferLike> | NodeJS.ReadableStream | ReadableStream<Uint8Array<ArrayBufferLike>>, callback: (arg0: string, arg1: string) => void, setOriginalImageNames: { (value: SetStateAction<string[]>): void; (arg0: (prevPaths: any) => any[]): void }) {
-  return async () => {
-    const fileName = `${Date.now()}-${generatePinyin((blob as File).name)}`;
-
-    try {
-      const { data, error } = await supabase.storage
-        .from('post-content-images')
-        .upload(fileName, blob, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('post-content-images')
-        .getPublicUrl(data.path);
-
-      if (!publicUrlData.publicUrl) {
-        throw new Error('無法獲取圖片的公開 URL');
-      }
-
-      callback(publicUrlData.publicUrl, (blob as File).name);
-
-      // 更新原始圖片路徑
-      setOriginalImageNames((prevPaths) => [...prevPaths, fileName]);
-    } catch (error) {
-      console.error('圖片上傳失敗:', error);
-      toast.error('圖片上傳失敗');
-    }
-  };
-}
-
-// 處理圖片清除
-function handleImageCleanup(editorRef: RefObject<any>, originalImageNames: any[], extractImagePaths: { (content: string | undefined): string[]; (arg0: any): any }) {
-  return async () => {
-    const editorInstance = editorRef.current?.getInstance();
-    const markdownContent = editorInstance?.getMarkdown();
-    const htmlContent = editorInstance?.getHTML();
-    console.log("Markdown 內容:", markdownContent);
-    console.log("HTML 內容:", htmlContent);
-
-    const newImagePaths = extractImagePaths(markdownContent);
-    console.log('originalImagePaths', originalImageNames);
-    console.log('newImagePaths', newImagePaths);
-
-    // 比對差異，找出需要刪除的圖片
-    const imagesToDelete = originalImageNames.filter(
-      (path) => !newImagePaths.includes(path)
-    );
-    console.log('imagesToDelete', imagesToDelete);
-
-    // 批量刪除不需要的圖片
-    if (imagesToDelete.length > 0) {
-      try {
-        const { error } = await supabase.storage
-          .from('post-content-images')
-          .remove(imagesToDelete);
-
-        if (error) {
-          console.error(`刪除批量圖片失敗: `, error);
-        } else {
-          console.log(`刪除批量圖片成功！`);
-        }
-      } catch (error) {
-        console.error(`刪除圖片時發生錯誤: ${error}`);
-      }
-    } else {
-      console.log('沒有需要刪除的圖片');
-    }
-  };
-}
-
-// 生成拼音
-function generatePinyin(title: string) {
-  return pinyin(title, {
-    style: pinyin.STYLE_NORMAL, // 使用普通拼音樣式
-  })
-    .flat() // 將多維數組展平
-    .join('-') // 使用連字符連接
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-') // 移除非字母、數字和連字符的字符
-    .replace(/(^-|-$)/g, ''); // 移除開頭和結尾的連字符
-}
-
 const PostForm = ({ mode, postId }: PostFormProps) => {
     const router = useRouter()
-    // 新增一個狀態變數來追蹤是否是初次載入
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    // 新增一個狀態變數來追蹤是否資料已載入完成
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
     const [subCategories, setSubCategories] = useState<SubCategory[]>([])
     const [tags, setTags] = useState<Tag[]>([])
     const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null)
     const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
-    const [originalImageNames, setOriginalImageNames] = useState<string[]>([]);
-    
-    const editorRef = useRef<any>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+
     const { 
       newCategoryId, 
       setNewCategoryId, 
@@ -200,7 +106,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         isPublished: false,
       },
     })
-  
+
     // 載入主題和標籤列表
     useEffect(() => {
       const fetchInitialData = async () => {
@@ -208,49 +114,34 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           const response = await fetch('/api/initial-data');
           if (!response.ok) throw new Error('獲取初始數據失敗');
           const data = await response.json();
-          // 獲取主題和標籤列表
+          
           setCategories(data.data.categories);
           setTags(data.data.tags);
-          
-          // 如果是編輯模式，則載入文章詳情
+
           if (mode === 'edit' && postId) {
             const postResponse = await fetch(`/api/posts/${postId}`);
             if (!postResponse.ok) throw new Error('獲取文章詳情失敗');
             const postData = await postResponse.json();
-            // 獲取文章詳情
             const post = postData.data;
-            console.log(post);
-            // 設置表單初始值
+
             form.setValue('title', post.title);
             form.setValue('slug', post.slug);
             form.setValue('slugStatus', post.slugStatus);
-            form.setValue('tagIds', post.tags.map((tag: { id: number, name: string }) => tag.id));
-            form.setValue('isPublished', post.published);
-
-            // 設置文章內容
             form.setValue('content', post.content);
-            const editorInstance = editorRef.current?.getInstance();
-            editorInstance?.setMarkdown(post.content);
-
-            // 設置主題和子主題
             form.setValue('categoryId', post.categoryId);
             setNewSubCategoryId(post.subcategoryId);
             handleCategoryChange(post.categoryId);
+            form.setValue('tagIds', post.tags.map((tag: Tag) => tag.id));
+            form.setValue('isPublished', post.published);
           }
+
+          setIsDataLoaded(true); // 資料載入完成
         } catch {
           toast.error('獲取初始數據失敗');
         }
       };
-  
-      fetchInitialData();
-    }, []);
 
-    // 初始化時從內容中提取圖片路徑
-    useEffect(() => {
-      const editorInstance = editorRef.current?.getInstance();
-      const initialContent = editorInstance?.getMarkdown();
-      const imagePaths = extractImagePaths(initialContent);
-      setOriginalImageNames(imagePaths);
+      fetchInitialData();
     }, []);
   
     // 處理新增的主題
@@ -327,19 +218,12 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         );
         if (isSubCategoryValid?.categoryId === form.getValues('categoryId')) {
           form.setValue('subCategoryId', isSubCategoryValid?.id);
-          if (isInitialLoad) {
-            setIsInitialLoad(false); // 標記初次載入已完成
-          }
         } else {
           form.setValue('subCategoryId', undefined);
         }
-      } else {
-        if (!isInitialLoad) {
-          form.setValue('subCategoryId', undefined);
-        }
       }
-    }, [subCategories, newlyAddedSubCategoryId, form, isInitialLoad])
-
+    }, [subCategories, newlyAddedSubCategoryId, form])
+    
     // 檢查是否有新的標籤ID
     useEffect(() => {
       console.log("從 Context 獲取的新標籤 ID:", contextNewTagId);
@@ -378,18 +262,24 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         contextSetNewTagId(null);
       }
     }, [form, tags, contextNewTagId, contextSetNewTagId])
-  
-    // 提取 Markdown 中的圖片路徑
-    const extractImagePaths = (content: string | undefined): string[] => {
-      if (!content) return [];
-      const regex = /!\[.*?\]\(.*?\/([^\/]+)\)/g; // 匹配 Markdown 圖片語法並提取文件名
-      const paths: string[] = [];
-      let match;
-      while ((match = regex.exec(content)) !== null) {
-        paths.push(match[1]); // 只提取文件名
-      }
-      return paths;
-    };
+
+    // 控制沈浸式編輯
+    useEffect(() => {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape" && isFullscreen) {
+          setIsFullscreen(false);
+        }
+        if (event.key === "Escape" && isEditorFullscreen) {
+          setIsEditorFullscreen(false);
+        }
+      };
+
+      window.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }, [isFullscreen, isEditorFullscreen]);
 
     // 當主題改變時載入對應的子主題
     const handleCategoryChange = async (categoryId: number) => {
@@ -485,7 +375,13 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       }
       router.push(`/posts/new/sub-category?categoryId=${categoryId}`, { scroll: false })
     }
-  
+
+    const handleEditorChange = useCallback((markdown: string) => {
+      // console.log('update to form', markdown);
+      form.setValue('content', markdown);
+      form.trigger('content');
+    }, [form]);
+
     // 提交表單
     const onSubmit = async (values: FormValues) => {
       console.log(values.slugStatus);
@@ -498,8 +394,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         return;
       }
     
-      const cleanupImages = handleImageCleanup(editorRef, originalImageNames, extractImagePaths);
-      await cleanupImages();
       console.log(values);
     
       setIsSubmitting(true);
@@ -546,17 +440,55 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       }
     }
 
+    // 載入資料Loading Spin
+    if (!isDataLoaded) {
+      return (
+        <div className="flex items-center justify-center h-screen">
+          <div className="flex flex-col items-center">
+            <svg
+              className="animate-spin h-10 w-10 text-blue-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8H4z"
+              ></path>
+            </svg>
+            <p className="mt-4 text-lg font-medium text-gray-600">資料載入中，請稍候...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="container mx-auto">
-        <div className="max-w-4xl mx-auto">
+      <div className={`container mx-auto ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+        <div className={`max-w-4xl mx-auto ${isFullscreen ? 'h-full flex flex-col' : 'min-h-[500px]'}`}>
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
               <ArrowLeft className="cursor-pointer" onClick={() => router.back()} />
               <h1 className="text-2xl font-bold">{mode === 'new' ? '新增文章' : '編輯文章'}</h1>
             </div>
+            <button
+              type="button"
+              className="p-2 rounded-md hover:bg-gray-100"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+            >
+              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Fullscreen className="h-5 w-5" />}
+            </button>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className={`bg-white rounded-lg shadow p-6 ${isFullscreen ? 'flex-1 overflow-auto' : ''}`}>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
@@ -694,7 +626,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         <div className="flex gap-2 items-center">
                           <Select
                             onValueChange={(value) => {
-                              console.log(value);
+                              // console.log(value);
                               
                               if (value === 'reset') {
                                 form.setValue('subCategoryId', undefined)
@@ -768,7 +700,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                             }))}
                             selected={field.value ? field.value.map(String) : []}
                             onChange={(value) => {
-                              // 将字符串ID转换为数字
+                              // 將字串ID轉換為數字
                               const numericValues = value.map(Number)
                               field.onChange(numericValues)
                               form.trigger('tagIds')
@@ -802,25 +734,12 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                     <FormItem>
                       <FormLabel>內容</FormLabel>
                       <FormControl>
-                        <ToastEditor
-                          ref={editorRef}
-                          initialValue={field.value || ' '}
-                          // previewStyle="tab"
-                          height="400px"
-                          initialEditType="wysiwyg"
-                          useCommandShortcut={true}
-                          placeholder="請輸入文章內容"
-                          onChange={() => {
-                            const editorInstance = editorRef.current?.getInstance();
-                            const markdownContent = editorInstance?.getMarkdown();
-                            field.onChange(markdownContent);
-                            form.trigger("content"); // 手動觸發驗證
-                          }}
-                          hooks={{
-                            addImageBlobHook: async (blob: string | Blob | ArrayBuffer | FormData | URLSearchParams | File | ArrayBufferView<ArrayBufferLike> | Buffer<ArrayBufferLike> | NodeJS.ReadableStream | ReadableStream<Uint8Array<ArrayBufferLike>>, callback: (arg0: string, arg1: string) => void) => {
-                              await handleEditorImageUpload(blob, callback, setOriginalImageNames)();
-                            },
-                          }}
+                        <CrepeEditor
+                          id="editor"
+                          markdown={field.value || ''}
+                          setMarkdown={handleEditorChange}
+                          isFullscreen={isEditorFullscreen}
+                          onToggleFullscreen={() => setIsEditorFullscreen(!isEditorFullscreen)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -854,7 +773,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                     type="button"
                     variant="outline"
                     onClick={() => { 
-                      console.log("当前表单值:", form.getValues()); 
+                      console.log("當前表單值:", form.getValues()); 
                       router.back();
                     }}
                   >
