@@ -9,16 +9,29 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
     const skip = (page - 1) * pageSize;
-
+    const all = searchParams.get('all') === 'true';
     // 構建查詢條件
-    const where: Prisma.PostWhereInput = search
-      ? {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { content: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    const where: Prisma.PostWhereInput =
+      all
+        ? (search
+            ? {
+                OR: [
+                  { title: { contains: search, mode: 'insensitive' } },
+                  { content: { contains: search, mode: 'insensitive' } },
+                ],
+              }
+            : {})
+        : {
+            published: true,
+            ...(search
+              ? {
+                  OR: [
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { content: { contains: search, mode: 'insensitive' } },
+                  ],
+                }
+              : {}),
+          };
 
     // 查詢文章列表和總數
     const [posts, total] = await Promise.all([

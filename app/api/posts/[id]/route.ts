@@ -78,7 +78,7 @@ export async function PUT(
       }
 
       const body = await request.json();
-      const { title, content, categoryId, subCategoryId, tagIds, isPublished, slug } = body;
+      const { title, content, categoryId, subCategoryId, tagIds, isPublished, slug, coverImageUrl } = body;
 
       if (!title || !content) {
         return NextResponse.json(
@@ -116,6 +116,7 @@ export async function PUT(
           subcategoryId: subCategoryId,
           published: isPublished,
           slug,
+          coverImageUrl,
         }
       });
 

@@ -5,7 +5,8 @@ import { getServerUser } from '@/lib/server-auth'
 
 // 文章驗證schema
 const postSchema = z.object({
-  slug: z.string().min(1, 'Slug名稱不能為空')
+  slug: z.string().min(1, 'Slug名稱不能為空'),
+  coverImageUrl: z.string().optional(),
 })
 
 // POST /api/posts/new - 創建新文章
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { slug } = validation.data;
+    const { slug, coverImageUrl } = validation.data;
 
     // 檢查文章名稱是否已存在
     const existingSlug = await prisma.post.findFirst({
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
         authorId: user.id,
         createdBy: user.id,
         published: body.isPublished,
+        coverImageUrl: body.coverImageUrl,
         tags: {
           create: body.tagIds.map((tagId: number) => ({
             tagId,

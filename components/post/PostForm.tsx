@@ -71,10 +71,14 @@ const formSchema = z.object({
   tagIds: z.array(z.number()).optional().default([]),
   content: z.string().min(1, "內容不能為空"),
   isPublished: z.boolean().default(false),
-  coverImageUrl: z.string().refine(
-    val => /^data:image\/[a-zA-Z]+;base64,/.test(val),
-    { message: "請提供有效的 base64 圖片" }
-  ).optional(),
+  coverImageUrl: z.string()
+    .refine(
+      val =>
+        /^data:image\/[a-zA-Z]+;base64,/.test(val) ||
+        /^https?:\/\/.+/.test(val),
+      { message: "請提供有效的圖片（base64 或 URL）" }
+    )
+    .optional(),
 });
 const PostForm = ({ mode, postId }: PostFormProps) => {
     const router = useRouter()
@@ -88,6 +92,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+    const [oldCoverImageUrl, setOldCoverImageUrl] = useState<string | undefined>(undefined);
 
     const { 
       newCategoryId, 
@@ -139,6 +144,8 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             handleCategoryChange(post.categoryId);
             form.setValue('tagIds', post.tags.map((tag: Tag) => tag.id));
             form.setValue('isPublished', post.published);
+            form.setValue('coverImageUrl', post.coverImageUrl || "");
+            setOldCoverImageUrl(post.coverImageUrl || undefined);
           }
 
           setIsDataLoaded(true); // 資料載入完成
@@ -388,6 +395,33 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       form.trigger('content');
     }, [form]);
 
+    // 上傳圖片到 Supabase Storage
+    async function uploadImageToSupabase(base64: string, fileName: string) {
+      const arr = base64.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) u8arr[n] = bstr.charCodeAt(n);
+      const file = new File([u8arr], fileName, { type: mime });
+      const { data, error } = await supabase.storage
+        .from('post-cover-images')
+        .upload(fileName, file, { upsert: true });
+      if (error) throw error;
+      const { data: publicUrlData } = supabase.storage
+        .from('post-cover-images')
+        .getPublicUrl(fileName);
+      return publicUrlData.publicUrl;
+    }
+    // 刪除 Supabase Storage 圖片
+    async function deleteImageFromSupabase(url: string) {
+      try {
+        const parts = url.split('/');
+        const fileName = parts[parts.length - 1];
+        await supabase.storage.from('post-cover-images').remove([fileName]);
+      } catch {}
+    }
+
     // 提交表單
     const onSubmit = async (values: FormValues) => {
       console.log(values.slugStatus);
@@ -405,35 +439,40 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       setIsSubmitting(true);
     
       try {
+        let coverImageUrl = values.coverImageUrl;
+        // 新增或有更換圖片時（base64）
+        if (coverImageUrl && coverImageUrl.startsWith('data:image/')) {
+          const fileName = `cover-${Date.now()}.jpg`;
+          coverImageUrl = await uploadImageToSupabase(coverImageUrl, fileName);
+          if (!coverImageUrl) throw new Error('圖片上傳失敗');
+        }
         if (mode === "new") {
-          // 新增文章的邏輯
+          // 新增文章
           const response = await fetch("/api/posts/new", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(values),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...values,
+              coverImageUrl
+            }),
           });
-    
-          if (!response.ok) {
-            throw new Error("新增文章失敗");
-          }
-    
+          if (!response.ok) throw new Error("新增文章失敗");
           toast.success("文章新增成功");
         } else if (mode === "edit" && postId) {
-          // 編輯文章的邏輯
+          // 編輯文章
           const response = await fetch(`/api/posts/${postId}`, {
             method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(values),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...values,
+              coverImageUrl
+            }),
           });
-    
-          if (!response.ok) {
-            throw new Error("編輯文章失敗");
+          if (!response.ok) throw new Error("編輯文章失敗");
+          // 若有舊圖片且有更換，刪除舊圖片
+          if (oldCoverImageUrl && oldCoverImageUrl !== coverImageUrl) {
+            await deleteImageFromSupabase(oldCoverImageUrl);
           }
-    
           toast.success("文章編輯成功");
         }
     

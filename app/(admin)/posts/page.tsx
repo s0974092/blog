@@ -47,6 +47,7 @@ export default function Posts() {
           search,
           page: page.toString(),
           pageSize: "10",
+          all: "true",
         });
         const response = await fetch(`/api/posts?${params}`);
         if (!response.ok) throw new Error("獲取文章列表失敗");

@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Post } from '@/types/database';
 import { useRouter } from 'next/navigation';
 import { getClientUser } from '@/lib/auth';
+import BlogCard from '@/components/blog/BlogCard';
 
 interface User {
   id: string;
@@ -28,25 +28,15 @@ export default function BlogPage() {
       try {
         // 檢查登入狀態
         const userData = await getClientUser();
-        if (userData && userData.email) {  // 確保 email 存在
-          setUser(userData as User);  // 使用類型斷言
+        if (userData && userData.email) {
+          setUser(userData as User);
         }
 
-        // 獲取文章列表
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('published', true)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('獲取文章列表失敗:', error);
-          toast.error('獲取文章列表失敗', {
-            description: error.message
-          });
-          return;
-        }
-        setPosts(data || []);
+        // 改為 fetch Next.js API
+        const res = await fetch('/api/posts?page=1&pageSize=10');
+        const result = await res.json();
+        if (!result.success) throw new Error(result.error || '獲取文章列表失敗');
+        setPosts(result.data.items || []);
       } catch (error: any) {
         console.error('初始化失敗:', error);
         toast.error('初始化失敗', {
@@ -56,7 +46,6 @@ export default function BlogPage() {
         setLoading(false);
       }
     }
-
     initialize();
   }, []);
 
@@ -68,7 +57,6 @@ export default function BlogPage() {
     );
   }
 
-  // 獲取顯示名稱，如果沒有就使用郵箱
   const displayName = user?.user_metadata?.display_name || user?.email;
 
   return (
@@ -100,21 +88,7 @@ export default function BlogPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
-            <article
-              key={post.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  <Link href={`/blog/${post.id}`} className="hover:text-blue-600">
-                    {post.title}
-                  </Link>
-                </h2>
-                <time className="text-sm text-gray-500">
-                  {new Date(post.created_at).toLocaleDateString('zh-TW')}
-                </time>
-              </div>
-            </article>
+            <BlogCard key={post.id} {...post} />
           ))}
         </div>
       </main>
