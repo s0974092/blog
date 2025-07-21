@@ -33,6 +33,7 @@ import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
 import { generatePinyin } from "@/lib/utils";
 import { CrepeEditor } from "./crepe-editor";
+import { PostImageUploader } from "./PostImageUploader";
 
 // 將類型定義移到頂部
 interface PostFormProps {
@@ -70,6 +71,10 @@ const formSchema = z.object({
   tagIds: z.array(z.number()).optional().default([]),
   content: z.string().min(1, "內容不能為空"),
   isPublished: z.boolean().default(false),
+  coverImageUrl: z.string().refine(
+    val => /^data:image\/[a-zA-Z]+;base64,/.test(val),
+    { message: "請提供有效的 base64 圖片" }
+  ).optional(),
 });
 const PostForm = ({ mode, postId }: PostFormProps) => {
     const router = useRouter()
@@ -104,6 +109,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         subCategoryId: null,
         tagIds: [],
         isPublished: false,
+        coverImageUrl: "",
       },
     })
 
@@ -561,6 +567,26 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                     )}
                   />
                 </div>
+
+                {/* 文章封面圖片上傳/AI生成 */}
+                <FormField
+                  control={form.control}
+                  name="coverImageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>文章封面圖片</FormLabel>
+                      <PostImageUploader
+                        value={field.value}
+                        onChange={(url, file) => {
+                          field.onChange(url);
+                          // 若需處理 file 上傳，請在 onSubmit 處理
+                        }}
+                        disabled={isSubmitting}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid grid-cols-2 gap-6">
                   <FormField

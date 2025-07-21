@@ -28,6 +28,7 @@ model Post {
   tags          PostTag[]
   category      Category     @relation(fields: [categoryId], references: [id], onDelete: SetDefault)
   subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
+  coverImageUrl String?      @map("cover_image_url") // 文章封面圖片網址
 
   @@map("posts")
 }
