@@ -10,28 +10,33 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '10', 10);
     const skip = (page - 1) * pageSize;
     const all = searchParams.get('all') === 'true';
+    const categoryId = searchParams.get('categoryId');
+    const subCategoryId = searchParams.get('subCategoryId');
+    const sort = searchParams.get('sort') || 'newest';
+
     // 構建查詢條件
-    const where: Prisma.PostWhereInput =
-      all
-        ? (search
-            ? {
-                OR: [
-                  { title: { contains: search, mode: 'insensitive' } },
-                  { content: { contains: search, mode: 'insensitive' } },
-                ],
-              }
-            : {})
-        : {
-            published: true,
-            ...(search
-              ? {
-                  OR: [
-                    { title: { contains: search, mode: 'insensitive' } },
-                    { content: { contains: search, mode: 'insensitive' } },
-                  ],
-                }
-              : {}),
-          };
+    let where: Prisma.PostWhereInput = all ? {} : { published: true };
+    if (search) {
+      where = {
+        ...where,
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+        ],
+      };
+    }
+    if (categoryId) {
+      where = { ...where, categoryId: Number(categoryId) };
+    }
+    if (subCategoryId) {
+      where = { ...where, subcategoryId: Number(subCategoryId) };
+    }
+
+    // 決定排序條件
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'oldest') orderBy = { createdAt: 'asc' };
+    if (sort === 'title-asc') orderBy = { title: 'asc' };
+    if (sort === 'title-desc') orderBy = { title: 'desc' };
 
     // 查詢文章列表和總數
     const [posts, total] = await Promise.all([
@@ -39,7 +44,7 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           tags: {
             select: {
@@ -68,10 +73,12 @@ export async function GET(request: NextRequest) {
       prisma.post.count({ where }),
     ]);
 
-    // 轉換文章列表，將 tags 陣列中的 tag 物件轉換為 tag 名稱
+    // 轉換文章列表，將 tags 陣列中的 tag 物件轉換為 tag 名稱，並將日期轉為 ISO 字串
     const transformedPosts = posts.map(post => ({
       ...post,
       tags: post.tags.map(tag => tag.tag),
+      created_at: post.createdAt?.toISOString?.() ?? '',
+      updated_at: post.updatedAt?.toISOString?.() ?? '',
     }));
 
     return NextResponse.json({

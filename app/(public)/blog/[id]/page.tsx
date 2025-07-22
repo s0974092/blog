@@ -3,21 +3,21 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { PostCard } from '@/types/post-card';
+import { Post } from '@/types/post-card';
 
 export default function BlogDetailPage() {
   const params = useParams();
-  const id = params?.id;
-  const [post, setPost] = useState<PostCard | undefined>(undefined);
+  const slug = params?.id; // id 實際上是 slug
+  const [post, setPost] = useState<Post | undefined>(undefined);
 
   useEffect(() => {
     async function fetchPost() {
-      const res = await fetch(`/api/posts/${id}`);
+      const res = await fetch(`/api/posts/${slug}`);
       const result = await res.json();
       setPost(result.data);
     }
-    if (id) fetchPost();
-  }, [id]);
+    if (slug) fetchPost();
+  }, [slug]);
 
   if (!post) return <div className="min-h-screen flex items-center justify-center">載入中...</div>;
 
@@ -29,7 +29,7 @@ export default function BlogDetailPage() {
       )}
       <h1 className="text-3xl font-bold mb-2">{post?.title}</h1>
       <div className="text-sm text-gray-500 mb-4">
-        {new Date(post.created_at).toLocaleDateString('zh-TW')}
+        {post.created_at ? new Date(post.created_at).toLocaleDateString('zh-TW') : ''}
         {post.category?.name && <> · {post.category.name}</>}
       </div>
       <div className="flex flex-wrap gap-2 mb-4">

@@ -16,9 +16,10 @@ export async function GET(
           { status: 400 }
         );
       }
-      
+      // 判斷 id 是否為 uuid，否則用 slug 查詢
+      const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
       const post = await prisma.post.findUnique({
-        where: { id },
+        where: isUuid ? { id } : { slug: id },
         include: {
           category: true,
           subcategory: true,
@@ -50,7 +51,12 @@ export async function GET(
       // 將原本的post物件中tags移除，並重新加入轉換後的tags
       // 建立一個新的物件，幾post物件的所有屬性，除了tags外
       const { tags, ...rest } = post;
-      const transformedPost = { ...rest, tags: transformedTags };
+      const transformedPost = {
+        ...rest,
+        tags: transformedTags,
+        created_at: post.createdAt?.toISOString?.() ?? '',
+        updated_at: post.updatedAt?.toISOString?.() ?? '',
+      };
       
       return NextResponse.json({ success: true, data: transformedPost });
     } catch (error) {
@@ -76,7 +82,8 @@ export async function PUT(
           { status: 400 }
         );
       }
-
+      // 判斷 id 是否為 uuid，否則用 slug 查詢
+      const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
       const body = await request.json();
       const { title, content, categoryId, subCategoryId, tagIds, isPublished, slug, coverImageUrl } = body;
 
@@ -108,7 +115,7 @@ export async function PUT(
       }
 
       const updatedPost = await prisma.post.update({
-        where: { id },
+        where: isUuid ? { id } : { slug: id },
         data: {
           title,
           content,

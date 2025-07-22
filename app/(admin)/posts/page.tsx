@@ -18,24 +18,15 @@ import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation'
+import type { Post } from '@/types/post-card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { EllipsisTooltip } from '@/components/ui/EllipsisTooltip';
 
 export default function Posts() {
   const router = useRouter()
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  interface Post {
-    id: string;
-    published: boolean;
-    slug: string;
-    title: string;
-    category?: { name: string };
-    subcategory?: { name: string };
-    tags: { id: string; name: string }[];
-    createdAt: string;
-    updatedAt: string;
-  }
-
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -121,34 +112,46 @@ export default function Posts() {
               <TableBody>
                 {posts.map((post) => (
                   <TableRow key={post.id}>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap align-middle text-center w-[80px]">
                       <Badge variant={post.published ? "success" : "secondary"}>
                         {post.published ? "已發布" : "草稿"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{post.slug}</TableCell>
-                    <TableCell>{post.title}</TableCell>
+                    <TableCell>
+                      <EllipsisTooltip className="max-w-[120px] inline-block align-bottom">{post.slug}</EllipsisTooltip>
+                    </TableCell>
+                    <TableCell>
+                      <EllipsisTooltip className="max-w-[180px] inline-block align-bottom">{post.title}</EllipsisTooltip>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span>{post.category?.name || "無"}</span>
+                        <EllipsisTooltip className="max-w-[100px] inline-block align-bottom">{post.category?.name || "無"}</EllipsisTooltip>
                         {post.subcategory && (
-                          <span className="text-sm text-gray-500">
-                            {post.subcategory.name}
-                          </span>
+                          <EllipsisTooltip className="max-w-[100px] inline-block align-bottom text-sm text-gray-500">{post.subcategory.name}</EllipsisTooltip>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {post.tags && post.tags.map((tag) => (
-                          <Badge key={tag.id} variant="secondary">
-                            {tag.name}
-                          </Badge>
+                        {post.tags && post.tags.slice(0, 3).map((tag) => (
+                          <Badge key={tag.id} variant="secondary" className="truncate max-w-[80px]">{tag.name}</Badge>
                         ))}
+                        {post.tags && post.tags.length > 3 && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary" className="cursor-pointer">...</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {post.tags.slice(3).map(tag => tag.name).join(', ')}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell>{format(new Date(post.createdAt), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
-                    <TableCell>{format(new Date(post.updatedAt), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                    <TableCell>{post.createdAt ? format(new Date(post.createdAt), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
+                    <TableCell>{post.updatedAt ? format(new Date(post.updatedAt), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-2">
                         <Button
