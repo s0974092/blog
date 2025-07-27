@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, SetStateAction, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -28,14 +28,13 @@ import { MultiSelect } from "@/components/ui/multi-select"
 import { PlusIcon } from "lucide-react"
 import { debounce } from 'lodash'
 import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Fullscreen, Minimize } from "lucide-react"
-import dynamic from 'next/dynamic';
 import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
 import { generatePinyin } from "@/lib/utils";
-import { CrepeEditor } from "./crepe-editor";
 import { PostImageUploader } from "./PostImageUploader";
+import { YooptaContentValue } from '@yoopta/editor';
+import { PostEditor, PostEditorRef } from "./PostEditor";
 
-// 將類型定義移到頂部
 interface PostFormProps {
   mode: 'new' | 'edit';
   postId?: string;
@@ -102,7 +101,18 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       newTagId: contextNewTagId, 
       setNewTagId: contextSetNewTagId 
     } = useCategoryContext()
-  
+
+    const selectionRef = useRef<HTMLElement>(null) as React.RefObject<HTMLElement>;
+    const postEditorRef = useRef<PostEditorRef>(null);
+    const [editorValue, setEditorValue] = useState<YooptaContentValue | undefined>(undefined);
+
+    // PostEditor 的 onChange 處理函數，自動同步 plainText 到 form
+    const handleEditorChange = (value: YooptaContentValue, plainText: string) => {
+      setEditorValue(value);
+      form.setValue('content', plainText);
+      form.trigger('content');
+    };
+
     const form = useForm<FormValues>({
       resolver: zodResolver(formSchema),
       defaultValues: {
@@ -138,7 +148,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             form.setValue('title', post.title);
             form.setValue('slug', post.slug);
             form.setValue('slugStatus', post.slugStatus);
-            form.setValue('content', post.content);
             form.setValue('categoryId', post.categoryId);
             setNewSubCategoryId(post.subcategoryId);
             handleCategoryChange(post.categoryId);
@@ -146,6 +155,11 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             form.setValue('isPublished', post.published);
             form.setValue('coverImageUrl', post.coverImageUrl || "");
             setOldCoverImageUrl(post.coverImageUrl || undefined);
+            
+            // 設置編輯器內容
+            if (post?.content) {
+              setEditorValue(post.content);
+            }
           }
 
           setIsDataLoaded(true); // 資料載入完成
@@ -389,12 +403,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       router.push(`/posts/new/sub-category?categoryId=${categoryId}`, { scroll: false })
     }
 
-    const handleEditorChange = useCallback((markdown: string) => {
-      // console.log('update to form', markdown);
-      form.setValue('content', markdown);
-      form.trigger('content');
-    }, [form]);
-
     // 上傳圖片到 Supabase Storage
     async function uploadImageToSupabase(base64: string, fileName: string) {
       const arr = base64.split(',');
@@ -422,9 +430,10 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       } catch {}
     }
 
-    // 提交表單
-    const onSubmit = async (values: FormValues) => {
-      console.log(values.slugStatus);
+    // 儲存前格式轉換
+    const onSubmit = async (values: FormValues) => {      
+      console.log('onSubmit values:', values);
+      console.log(values.slugStatus);   
       
       if (form.getFieldState('slugStatus').isDirty && values.slugStatus !== "success") {
         form.setError("slug", {
@@ -446,6 +455,9 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           coverImageUrl = await uploadImageToSupabase(coverImageUrl, fileName);
           if (!coverImageUrl) throw new Error('圖片上傳失敗');
         }
+
+        const editorContent = postEditorRef.current?.getEditorValue();
+
         if (mode === "new") {
           // 新增文章
           const response = await fetch("/api/posts/new", {
@@ -453,6 +465,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...values,
+              content: editorContent,
               coverImageUrl
             }),
           });
@@ -465,6 +478,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...values,
+              content: editorContent,
               coverImageUrl
             }),
           });
@@ -792,6 +806,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                   )}
                 />
 
+                {/* 內容編輯器 */}
                 <FormField
                   control={form.control}
                   name="content"
@@ -799,12 +814,11 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                     <FormItem>
                       <FormLabel>內容</FormLabel>
                       <FormControl>
-                        <CrepeEditor
-                          id="editor"
-                          markdown={field.value || ''}
-                          setMarkdown={handleEditorChange}
-                          isFullscreen={isEditorFullscreen}
-                          onToggleFullscreen={() => setIsEditorFullscreen(!isEditorFullscreen)}
+                        <PostEditor
+                          ref={postEditorRef}
+                          value={editorValue}
+                          onChange={handleEditorChange}
+                          selectionBoxRoot={selectionRef}
                         />
                       </FormControl>
                       <FormMessage />

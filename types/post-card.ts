@@ -1,9 +1,11 @@
+import { YooptaContentValue } from "@yoopta/editor";
+
 export interface Post {
   id: string | number;
   slug: string;
   title: string;
   coverImageUrl?: string;
-  content?: string;
+  content?: YooptaContentValue;
   created_at?: string;
   createdAt?: string;
   updated_at?: string;

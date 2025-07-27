@@ -80,9 +80,9 @@ export async function POST(request: NextRequest) {
       status: 201 
     })
   } catch (error) {
-    console.error('創建標籤錯誤:', error)
+    console.error('創建文章錯誤:', error)
     return NextResponse.json(
-      { success: false, error: '創建標籤失敗' },
+      { success: false, error: '創建文章失敗' },
       { status: 500 }
     )
   }
