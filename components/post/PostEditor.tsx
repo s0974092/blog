@@ -22,21 +22,15 @@ class ImageTracker {
 
   addImage(url: string) {
     this.images.add(url);
-    console.log('圖片已添加到追蹤:', url);
   }
 
   removeImage(url: string) {
     if (this.images.has(url)) {
       this.images.delete(url);
-      console.log('圖片已從追蹤中移除:', url);
       
       if (this.onDeleteCallback) {
         this.onDeleteCallback(url);
-      } else {
-        console.warn('沒有設置刪除回調函數');
       }
-    } else {
-      console.warn('圖片不在追蹤列表中:', url);
     }
   }
 
@@ -251,7 +245,6 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
         // 檢查追蹤的圖片是否還在編輯器中
         trackedImages.forEach(imageUrl => {
           if (!contentStr.includes(imageUrl)) {
-            console.log('檢測到圖片已從編輯器中移除:', imageUrl);
             imageTracker.removeImage(imageUrl);
           }
         });
@@ -261,18 +254,31 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
     return () => clearInterval(checkInterval);
   }, [editor]);
 
-  // 監聽編輯器事件來捕獲刪除操作
+  // 監聽編輯器事件來捕獲刪除和替換操作
   useEffect(() => {
     const handleEditorEvent = (event: any) => {
       // 監聽編輯器的刪除事件
       if (event.type === 'delete' || event.type === 'remove') {
-        
         // 檢查是否刪除了圖片節點
         if (event.target && event.target.type === 'image') {
           const imageUrl = event.target.src || event.target.props?.src;
           if (imageUrl) {
-            console.log('檢測到圖片刪除:', imageUrl);
             imageTracker.removeImage(imageUrl);
+          }
+        }
+      }
+      
+      // 監聽圖片替換事件
+      if (event.type === 'replace' || event.type === 'replaceImage') {
+        
+        // 檢查是否替換了圖片節點
+        if (event.target && event.target.type === 'image') {
+          const oldImageUrl = event.target.src || event.target.props?.src;
+          const newImageUrl = event.newSrc || event.newProps?.src;
+          
+          if (oldImageUrl && newImageUrl) {
+            imageTracker.removeImage(oldImageUrl);
+            imageTracker.addImage(newImageUrl);
           }
         }
       }
@@ -297,6 +303,16 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
           }
         }
       }
+      
+      // 檢查是否為替換命令
+      if (command.type === 'replace' || command.type === 'replaceImage') {
+        
+        // 檢查命令中是否包含新舊圖片 URL
+        if (command.oldSrc && command.newSrc) {
+          imageTracker.removeImage(command.oldSrc);
+          imageTracker.addImage(command.newSrc);
+        }
+      }
     };
 
     // 使用 MutationObserver 監聽 DOM 變化
@@ -311,12 +327,48 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
               imgElements.forEach((img) => {
                 const src = img.getAttribute('src');
                 if (src) {
-                  console.log('檢測到圖片元素被移除:', src);
                   imageTracker.removeImage(src);
                 }
               });
             }
           });
+          
+          // 檢查是否有圖片元素被替換
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              const imgElements = element.querySelectorAll('img[src*="supabase.co"]');
+              imgElements.forEach((img) => {
+                const src = img.getAttribute('src');
+                if (src) {
+                  imageTracker.addImage(src);
+                }
+              });
+            }
+          });
+        }
+        
+        // 監聽屬性變化（圖片 src 變化）
+        if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+          const target = mutation.target as HTMLImageElement;
+          if (target && target.src && target.src.includes('supabase.co')) {
+            const oldSrc = mutation.oldValue;
+            const newSrc = target.src;
+            
+            if (oldSrc && newSrc && oldSrc !== newSrc) {
+              
+              // 即使舊圖片不在追蹤列表中，也要嘗試刪除它
+              if (imageTracker.getImages().includes(oldSrc)) {
+                imageTracker.removeImage(oldSrc);
+              } else {
+                // 直接刪除舊圖片，不通過追蹤器
+                cleanupImageFromStorage(oldSrc);
+              }
+              
+              // 添加新圖片到追蹤器
+              imageTracker.addImage(newSrc);
+            }
+          }
         }
       });
     });
@@ -327,26 +379,41 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
       // 監聽自定義事件
       editorElement.addEventListener('yoopta:delete', handleEditorEvent);
       editorElement.addEventListener('yoopta:remove', handleEditorEvent);
+      editorElement.addEventListener('yoopta:replace', handleEditorEvent);
+      editorElement.addEventListener('yoopta:replaceImage', handleEditorEvent);
       
       // 監聽編輯器命令
       editorElement.addEventListener('yoopta:command', handleEditorCommand);
+      
+      // 監聽全局點擊事件來檢測替換操作
+      const handleGlobalClick = (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+        if (target && target.closest('[data-yoopta-action="replace"]')) {
+        }
+      };
+      
+      document.addEventListener('click', handleGlobalClick);
       
       // 開始觀察 DOM 變化
       observer.observe(editorElement, {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['src']
+        attributeFilter: ['src'],
+        attributeOldValue: true
       });
       
       return () => {
         editorElement.removeEventListener('yoopta:delete', handleEditorEvent);
         editorElement.removeEventListener('yoopta:remove', handleEditorEvent);
+        editorElement.removeEventListener('yoopta:replace', handleEditorEvent);
+        editorElement.removeEventListener('yoopta:replaceImage', handleEditorEvent);
         editorElement.removeEventListener('yoopta:command', handleEditorCommand);
+        document.removeEventListener('click', handleGlobalClick);
         observer.disconnect();
       };
     }
-  }, [selectionRef, editor]);
+  }, [selectionRef, editor, cleanupImageFromStorage]);
 
   // 將 editor.getPlainText 暴露給外部
   const handleChange = (val: YooptaContentValue) => {
