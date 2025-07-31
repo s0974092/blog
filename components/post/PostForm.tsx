@@ -30,7 +30,7 @@ import { debounce } from 'lodash'
 import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Fullscreen, Minimize } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
-import { generatePinyin } from "@/lib/utils";
+import { generatePinyin, generateFileName } from "@/lib/utils";
 import { PostImageUploader } from "./PostImageUploader";
 import { YooptaContentValue } from '@yoopta/editor';
 import { PostEditor, PostEditorRef } from "./PostEditor";
@@ -451,7 +451,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         let coverImageUrl = values.coverImageUrl;
         // 新增或有更換圖片時（base64）
         if (coverImageUrl && coverImageUrl.startsWith('data:image/')) {
-          const fileName = `cover-${Date.now()}.jpg`;
+          const fileName = generateFileName();
           coverImageUrl = await uploadImageToSupabase(coverImageUrl, fileName);
           if (!coverImageUrl) throw new Error('圖片上傳失敗');
         }

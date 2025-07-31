@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import pinyin from "pinyin"
+import { v4 as uuidv4 } from 'uuid'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -20,4 +21,16 @@ export function generatePinyin(text: string) {
     .toLowerCase()
     .replace(/[^a-z0-9-]+/g, '-') // 移除非字母、數字和連字符的字元
     .replace(/(^-|-$)/g, ''); // 移除開頭和結尾的連字符
+}
+
+/**
+ * 生成檔案名稱，格式為 date-uuid.extension
+ * @param originalName 原始檔案名稱
+ * @returns 格式化後的檔案名稱
+ */
+export function generateFileName(originalName?: string): string {
+  const date = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
+  const uuid = uuidv4();
+  const extension = originalName?.split('.').pop() || 'jpg';
+  return `${date}_${uuid}.${extension}`;
 }
