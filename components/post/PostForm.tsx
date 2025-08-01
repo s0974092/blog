@@ -27,7 +27,7 @@ import {
 import { MultiSelect } from "@/components/ui/multi-select"
 import { PlusIcon } from "lucide-react"
 import { debounce } from 'lodash'
-import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Fullscreen, Minimize } from "lucide-react"
+import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Edit3, X } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
 import { generatePinyin, generateFileName } from "@/lib/utils";
@@ -89,7 +89,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     const [tags, setTags] = useState<Tag[]>([])
     const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null)
     const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
-    const [isFullscreen, setIsFullscreen] = useState(false);
     const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
     const [oldCoverImageUrl, setOldCoverImageUrl] = useState<string | undefined>(undefined);
 
@@ -293,11 +292,13 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     // 控制沈浸式編輯
     useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "Escape" && isFullscreen) {
-          setIsFullscreen(false);
-        }
         if (event.key === "Escape" && isEditorFullscreen) {
           setIsEditorFullscreen(false);
+        }
+        // 新增 Ctrl/Cmd + E 快捷鍵進入沈浸式編輯
+        if ((event.ctrlKey || event.metaKey) && event.key === "e" && !isEditorFullscreen) {
+          event.preventDefault();
+          setIsEditorFullscreen(true);
         }
       };
 
@@ -306,7 +307,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       return () => {
         window.removeEventListener("keydown", handleKeyDown);
       };
-    }, [isFullscreen, isEditorFullscreen]);
+    }, [isEditorFullscreen]);
 
     // 當主題改變時載入對應的子主題
     const handleCategoryChange = async (categoryId: number) => {
@@ -530,24 +531,62 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       );
     }
 
+    // 沈浸式編輯模式
+    if (isEditorFullscreen) {
+      return (
+        <div className="fixed inset-0 z-50 bg-white">
+          <div className="h-full flex flex-col">
+            {/* 沈浸式編輯器頂部工具列 */}
+            <div className="flex items-center justify-between p-4 border-b bg-white">
+              <div className="flex items-center gap-4">
+                <div className="text-2xl font-bold">
+                  文章內容
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditorFullscreen(false);
+                  }}
+                  title={`按 Esc 鍵可快速退出`}
+                >
+                  退出沈浸式編輯
+                </Button>
+              </div>
+            </div>
+
+            {/* 沈浸式編輯器內容區域 */}
+            <div className="flex-1 overflow-auto mb-6">
+              <div className="h-full w-full mx-auto p-6">
+                <div className="min-h-full">
+                  <PostEditor
+                    ref={postEditorRef}
+                    value={editorValue}
+                    onChange={handleEditorChange}
+                    selectionBoxRoot={selectionRef}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className={`container mx-auto ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
-        <div className={`max-w-4xl mx-auto ${isFullscreen ? 'h-full flex flex-col' : 'min-h-[500px]'}`}>
+      <div className="container w-full">
+        <div className="min-h-[500px] w-full">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
               <ArrowLeft className="cursor-pointer" onClick={() => router.back()} />
               <h1 className="text-2xl font-bold">{mode === 'new' ? '新增文章' : '編輯文章'}</h1>
             </div>
-            <button
-              type="button"
-              className="p-2 rounded-md hover:bg-gray-100"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-            >
-              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Fullscreen className="h-5 w-5" />}
-            </button>
           </div>
 
-          <div className={`bg-white rounded-lg shadow p-6 ${isFullscreen ? 'flex-1 overflow-auto' : ''}`}>
+          <div className="bg-white rounded-lg shadow p-6 w-full">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
@@ -579,41 +618,43 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                       <FormItem>
                         <FormLabel>Slug</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input
-                              placeholder="請輸入文章 Slug"
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                if (e.target.value === "") {
-                                  form.setValue('slugStatus', undefined); // 清空狀態
-                                } else {
-                                  form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
-                                  validateSlug(e.target.value);
-                                }
-                                form.trigger("slug"); // 手動觸發驗證
-                              }}
-                              onBlur={() => {
-                                if (field.value === '') {
-                                  form.setValue('slugStatus', undefined); // 清空狀態
-                                } else {
-                                  validateSlug(field.value || '');
-                                }
-                              }}
-                            />
-                            {(form.getValues('slugStatus') === undefined) && (
-                              <HelpCircle className="absolute right-2 top-2 h-5 w-5 text-gray-500" />
-                            )}
-                            {form.getValues('slugStatus') === 'success' && (
-                              <CheckCircle className="absolute right-2 top-2 h-5 w-5 text-green-500" />
-                            )}
-                            {form.getValues('slugStatus') === 'error' && (
-                              <XCircle className="absolute right-2 top-2 h-5 w-5 text-red-500" />
-                            )}
-                            {form.getValues('slugStatus') === 'validating' && (
-                              <Loader2 className="absolute right-2 top-2 h-5 w-5 text-blue-500 animate-spin" />
-                            )}
-                          </div>
+                          <Input
+                            placeholder="請輸入文章 Slug"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              if (e.target.value === "") {
+                                form.setValue('slugStatus', undefined); // 清空狀態
+                              } else {
+                                form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
+                                validateSlug(e.target.value);
+                              }
+                              form.trigger("slug"); // 手動觸發驗證
+                            }}
+                            onBlur={() => {
+                              if (field.value === '') {
+                                form.setValue('slugStatus', undefined); // 清空狀態
+                              } else {
+                                validateSlug(field.value || '');
+                              }
+                            }}
+                            endIcon={
+                              <>
+                                {(form.getValues('slugStatus') === undefined) && (
+                                  <HelpCircle className="h-5 w-5 text-gray-500" />
+                                )}
+                                {form.getValues('slugStatus') === 'success' && (
+                                  <CheckCircle className="h-5 w-5 text-green-500" />
+                                )}
+                                {form.getValues('slugStatus') === 'error' && (
+                                  <XCircle className="h-5 w-5 text-red-500" />
+                                )}
+                                {form.getValues('slugStatus') === 'validating' && (
+                                  <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                                )}
+                              </>
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -627,15 +668,70 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                   name="coverImageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>文章封面圖片</FormLabel>
-                      <PostImageUploader
-                        value={field.value}
-                        onChange={(url, file) => {
-                          field.onChange(url);
-                          // 若需處理 file 上傳，請在 onSubmit 處理
-                        }}
-                        disabled={isSubmitting}
-                      />
+                      <div className="space-y-2">
+                        {/* 第一排：標籤和移除按鈕 */}
+                        <div className="flex justify-between items-center h-9">
+                          <FormLabel>文章封面圖片</FormLabel>
+                          {field.value && (
+                            <Button 
+                              variant="destructive" 
+                              onClick={() => field.onChange(null)} 
+                              type="button" 
+                              disabled={isSubmitting}
+                            >
+                              移除圖片
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* 第二排：預覽圖片 */}
+                        {/* <div> */}
+                          <PostImageUploader
+                            value={field.value}
+                            onChange={(url, file) => {
+                              field.onChange(url);
+                              // 若需處理 file 上傳，請在 onSubmit 處理
+                            }}
+                            onRemove={() => {
+                              field.onChange(null);
+                            }}
+                            disabled={isSubmitting}
+                            showPreviewOnly={true}
+                          />
+                        {/* </div> */}
+                        
+                        {/* 第三排：選擇上傳圖片 */}
+                        <div>
+                          <PostImageUploader
+                            value={field.value}
+                            onChange={(url, file) => {
+                              field.onChange(url);
+                              // 若需處理 file 上傳，請在 onSubmit 處理
+                            }}
+                            onRemove={() => {
+                              field.onChange(null);
+                            }}
+                            disabled={isSubmitting}
+                            showUploadOnly={true}
+                          />
+                        </div>
+                        
+                        {/* 第四排：AI生成的文字prompt和按鈕 */}
+                        <div className="w-full">
+                          <PostImageUploader
+                            value={field.value}
+                            onChange={(url, file) => {
+                              field.onChange(url);
+                              // 若需處理 file 上傳，請在 onSubmit 處理
+                            }}
+                            onRemove={() => {
+                              field.onChange(null);
+                            }}
+                            disabled={isSubmitting}
+                            showAIGenerateOnly={true}
+                          />
+                        </div>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -812,7 +908,18 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>內容</FormLabel>
+                      <div className="flex items-center justify-between mb-2">
+                        <FormLabel>內容</FormLabel>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded-md transition-colors"
+                          onClick={() => setIsEditorFullscreen(true)}
+                          title={`進入沈浸式編輯模式 (${navigator.userAgent.includes('Mac') ? '⌘+E' : 'Ctrl+E'})`}
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          沈浸式編輯
+                        </button>
+                      </div>
                       <FormControl>
                         <PostEditor
                           ref={postEditorRef}

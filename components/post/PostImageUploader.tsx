@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -40,10 +40,22 @@ function getCroppedImg(imageSrc: string, croppedAreaPixels: any): Promise<Blob> 
 interface PostImageUploaderProps {
   value?: string; // 現有圖片URL
   onChange: (url: string | null, file?: File | null) => void;
+  onRemove?: () => void; // 新增移除回調函數
   disabled?: boolean;
+  showPreviewOnly?: boolean; // 只顯示預覽
+  showUploadOnly?: boolean; // 只顯示上傳
+  showAIGenerateOnly?: boolean; // 只顯示AI生成
 }
 
-export const PostImageUploader: React.FC<PostImageUploaderProps> = ({ value, onChange, disabled }) => {
+export const PostImageUploader: React.FC<PostImageUploaderProps> = ({ 
+  value, 
+  onChange, 
+  onRemove, 
+  disabled,
+  showPreviewOnly = false,
+  showUploadOnly = false,
+  showAIGenerateOnly = false
+}) => {
   const [preview, setPreview] = useState<string | null>(value || null);
   const [file, setFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -55,6 +67,11 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({ value, onC
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
+  // 監聽 value 變化，同步 preview 狀態
+  useEffect(() => {
+    setPreview(value || null);
+  }, [value]);
 
   // 上傳本地圖片
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,6 +146,7 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({ value, onC
     setFile(null);
     onChange(null, null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    onRemove?.(); // 呼叫父組件的 onRemove 回調
   };
 
   return (
@@ -155,49 +173,98 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({ value, onC
           </div>
         </DialogContent>
       </Dialog>
-      {/* 圖片預覽 */}
-      <div>
-        {preview ? (
-          <Image
-            src={preview}
-            alt="文章封面"
-            width={320}
-            height={180}
-            className="w-80 aspect-[16/9] object-cover rounded border"
-          />
-        ) : (
-          <div className="w-80 aspect-[16/9] bg-muted flex items-center justify-center rounded text-muted-foreground border">
-            尚未選擇圖片
-          </div>
-        )}
-      </div>
-      {/* 上傳圖片 */}
-      <Input
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        ref={fileInputRef}
-        disabled={disabled || isGenerating || isUploading}
-      />
-      {/* 或 AI 生成 */}
-      <div className="flex gap-2">
+      
+      {/* 只顯示預覽圖片 */}
+      {showPreviewOnly && (
+        <div>
+          {preview ? (
+            <Image
+              src={preview}
+              alt="文章封面"
+              width={1200}
+              height={630}
+              className="w-full aspect-[16/9] object-cover rounded border"
+            />
+          ) : (
+            <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center rounded text-muted-foreground border">
+              尚未選擇圖片
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* 只顯示上傳功能 */}
+      {showUploadOnly && (
         <Input
-          type="text"
-          placeholder="輸入標題或描述讓 AI 幫你生成圖片"
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          ref={fileInputRef}
           disabled={disabled || isGenerating || isUploading}
         />
-        <Button onClick={handleAIGenerate} disabled={disabled || isGenerating || isUploading} type="button">
-          {isGenerating && <Loader2 className="animate-spin mr-2" size={16} />}
-          {isGenerating ? "生成中..." : "AI 生成圖片"}
-        </Button>
-      </div>
-      {/* 移除圖片 */}
-      {preview && (
-        <Button variant="destructive" onClick={handleRemove} type="button" disabled={disabled || isGenerating || isUploading}>
-          移除圖片
-        </Button>
+      )}
+      
+      {/* 只顯示AI生成功能 */}
+      {showAIGenerateOnly && (
+        <div className="w-full flex gap-2 items-center">
+          <Input
+            type="text"
+            placeholder="輸入標題或描述讓 AI 幫你生成圖片"
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            disabled={disabled || isGenerating || isUploading}
+            containerClassName="flex-1"
+          />
+          <Button onClick={handleAIGenerate} disabled={disabled || isGenerating || isUploading} type="button">
+            {isGenerating && <Loader2 className="animate-spin mr-2" size={16} />}
+            {isGenerating ? "生成中..." : "AI 生成圖片"}
+          </Button>
+        </div>
+      )}
+      
+      {/* 完整功能（當沒有指定特殊模式時） */}
+      {!showPreviewOnly && !showUploadOnly && !showAIGenerateOnly && (
+        <div className="flex w-full">
+          {/* 圖片預覽 */}
+          <div>
+            {preview ? (
+              <Image
+                src={preview}
+                alt="文章封面"
+                width={1200}
+                height={630}
+                className="w-full aspect-[16/9] object-cover rounded border"
+              />
+            ) : (
+              <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center rounded text-muted-foreground border">
+                尚未選擇圖片
+              </div>
+            )}
+          </div>
+          {/* 上傳圖片 */}
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            ref={fileInputRef}
+            disabled={disabled || isGenerating || isUploading}
+          />
+          {/* 或 AI 生成 */}
+          <div className="w-full flex gap-2 items-center">
+            <Input
+              type="text"
+              placeholder="輸入標題或描述讓 AI 幫你生成圖片"
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              disabled={disabled || isGenerating || isUploading}
+              containerClassName="flex-1"
+            />
+            <Button onClick={handleAIGenerate} disabled={disabled || isGenerating || isUploading} type="button">
+              {isGenerating && <Loader2 className="animate-spin mr-2" size={16} />}
+              {isGenerating ? "生成中..." : "AI 生成圖片"}
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

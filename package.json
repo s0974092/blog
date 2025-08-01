@@ -29,6 +29,7 @@
     "@types/uuid": "^10.0.0",
     "@vitalets/google-translate-api": "^9.2.1",
     "@yoopta/action-menu-list": "^4.9.9",
+    "@yoopta/blockquote": "^4.9.9",
     "@yoopta/callout": "^4.9.9",
     "@yoopta/code": "^4.9.9",
     "@yoopta/editor": "^4.9.9",

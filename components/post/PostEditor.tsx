@@ -1,7 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useEffect, useCallback } from 'react';
 import YooptaEditor, { createYooptaEditor, YooptaContentValue } from '@yoopta/editor';
 import Paragraph from '@yoopta/paragraph';
-import Link from '@yoopta/link';
+import Link, { LinkElementProps } from '@yoopta/link';
 import { HeadingOne, HeadingThree, HeadingTwo } from '@yoopta/headings';
 import Code from '@yoopta/code';
 import Callout from '@yoopta/callout';
@@ -12,6 +12,7 @@ import ActionMenuList, { DefaultActionMenuRender } from '@yoopta/action-menu-lis
 import { Bold, Italic, CodeMark, Underline, Strike, Highlight } from '@yoopta/marks';
 import Embed from '@yoopta/embed';
 import Image from '@yoopta/image';
+import Blockquote from '@yoopta/blockquote';
 import { cn, generateFileName } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
@@ -54,11 +55,19 @@ const plugins = [
   HeadingOne,
   HeadingTwo,
   HeadingThree,
+  Blockquote,
   Callout,
   NumberedList,
   BulletedList,
   TodoList,
-  Link,
+  Link.extend({
+    elementProps: {
+      link: (props: LinkElementProps) => ({
+        ...props,
+        target: '_blank',
+      }),
+    },
+  }),
   Code,
   Embed,
   Image.extend({
@@ -425,21 +434,67 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
     <div
       ref={selectionRef as any}
       className={cn(
-        'border rounded-md px-3 py-2 min-h-[180px] bg-white focus-within:ring-2 focus-within:ring-blue-500 transition-all duration-150',
+        'border rounded-md px-3 py-2 min-h-[180px] bg-white transition-all duration-150 w-full',
+        // 只在非只讀模式下顯示 focus 邊框
+        !readOnly && 'focus-within:ring-2 focus-within:ring-blue-500',
         className
       )}
     >
-      <YooptaEditor
-        editor={editor}
-        plugins={plugins}
-        tools={TOOLS}
-        marks={MARKS}
-        value={value}
-        selectionBoxRoot={selectionRef}
-        onChange={handleChange}
-        readOnly={readOnly}
-        autoFocus={autoFocus}
-      />
+      <div className="yoopta-full-width">
+        <YooptaEditor
+          editor={editor}
+          plugins={plugins}
+          tools={TOOLS}
+          marks={MARKS}
+          value={value}
+          selectionBoxRoot={selectionRef}
+          onChange={handleChange}
+          readOnly={readOnly}
+          autoFocus={autoFocus}
+          data-readonly={readOnly ? "true" : "false"}
+        />
+      </div>
+      <style jsx>{`
+        .yoopta-full-width :global(.yoopta-editor),
+        .yoopta-full-width :global([data-yoopta-element]),
+        .yoopta-full-width :global(.yoopta-paragraph),
+        .yoopta-full-width :global(.yoopta-heading),
+        .yoopta-full-width :global(.yoopta-callout),
+        .yoopta-full-width :global(.yoopta-list),
+        .yoopta-full-width :global(.yoopta-code),
+        .yoopta-full-width :global(.yoopta-image),
+        .yoopta-full-width :global(.yoopta-link),
+        .yoopta-full-width :global(.yoopta-embed) {
+          max-width: none !important;
+          width: 100% !important;
+        }
+        
+        /* 只讀模式下禁用編輯器的 focus 樣式 */
+        .yoopta-full-width :global(.yoopta-editor[data-readonly="true"]) {
+          outline: none !important;
+        }
+        
+        .yoopta-full-width :global(.yoopta-editor[data-readonly="true"]:focus) {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        .yoopta-full-width :global(.yoopta-editor[data-readonly="true"]:focus-within) {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        /* 只讀模式下禁用所有編輯器元素的 focus 樣式 */
+        .yoopta-full-width :global([data-readonly="true"] [data-yoopta-element]:focus) {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        .yoopta-full-width :global([data-readonly="true"] [data-yoopta-element]:focus-within) {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+      `}</style>
     </div>
   );
 });
