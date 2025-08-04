@@ -33,11 +33,11 @@ export default function Footer() {
                   關於我
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="/login" className="text-gray-600 hover:text-blue-600 transition-colors">
                   管理後台
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
           
