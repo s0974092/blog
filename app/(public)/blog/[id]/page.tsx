@@ -1,94 +1,193 @@
-'use client'
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { Post } from '@/types/post-card';
-import 'katex/dist/katex.min.css';
-import { cn } from '@/lib/utils';
-import { PostEditor } from '@/components/post/PostEditor';
-import ArticleToc from '@/components/blog/ArticleToc';
-import ScrollToTop from '@/components/blog/ScrollToTop';
-import ReadingProgressBar from '@/components/blog/ReadingProgressBar';
-import ProgressBarToggle from '@/components/blog/ProgressBarToggle';
-import { useActiveHeading, useHeadings, TocHeading } from '@/hooks/useActiveHeading';
+import { BlogDetail } from '@/components/blog/BlogDetail';
 
-export default function BlogDetailPage() {
-  const params = useParams();
-  const slug = params?.id; // id 實際上是 slug
-  const [post, setPost] = useState<Post | undefined>(undefined);
-  const [activeId, setActiveId] = useState('');
-  const [showTopProgressBar, setShowTopProgressBar] = useState(true);
-  
-  // 使用自定義 hook 來解析標題
-  const headings = useHeadings(post?.content);
-  
-  useEffect(() => {
-    async function fetchPost() {
-      const res = await fetch(`/api/posts/${slug}`);
-      const result = await res.json();
-      setPost(result.data);
+// 生成動態metadata
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  try {
+    const { id } = await params;
+    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/posts/${id}`, {
+      next: { revalidate: 3600 } // 快取1小時
+    });
+    
+    if (!res.ok) {
+      return {
+        title: '文章未找到',
+        description: '抱歉，您要查找的文章不存在。'
+      };
     }
-    if (slug) fetchPost();
-  }, [slug]);
 
-  // 使用自定義 hook 來處理高亮
-  useActiveHeading(setActiveId, [post?.content, headings.length]);
+    const result = await res.json();
+    const post: Post = result.data;
+
+    if (!post) {
+      return {
+        title: '文章未找到',
+        description: '抱歉，您要查找的文章不存在。'
+      };
+    }
+
+    // 提取文章內容的前200個字元作為描述
+    const contentText = extractTextFromContent(post.content);
+    const description = contentText.length > 200 
+      ? contentText.substring(0, 200) + '...' 
+      : contentText;
+
+    // 生成關鍵字
+    const keywords = [
+      post.title,
+      ...(post.tags?.map(tag => tag.name) || []),
+      post.category?.name,
+      '部落格',
+      '文章'
+    ].filter(Boolean).join(', ');
+
+    return {
+      title: `${post.title} - 我的部落格`,
+      description,
+      keywords,
+      authors: [{ name: '部落格作者' }],
+      openGraph: {
+        title: post.title,
+        description,
+        type: 'article',
+        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/blog/${post.slug}`,
+        images: post.coverImageUrl ? [
+          {
+            url: post.coverImageUrl,
+            width: 1200,
+            height: 630,
+            alt: post.title,
+          }
+        ] : [],
+        publishedTime: post.created_at,
+        modifiedTime: post.updated_at,
+        authors: ['部落格作者'],
+        tags: post.tags?.map(tag => tag.name) || [],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: post.title,
+        description,
+        images: post.coverImageUrl ? [post.coverImageUrl] : [],
+      },
+      alternates: {
+        canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/blog/${post.slug}`,
+      },
+    };
+  } catch (error) {
+    console.error('生成metadata失敗:', error);
+    return {
+      title: '部落格文章',
+      description: '閱讀精彩的部落格文章。'
+    };
+  }
+}
+
+// 從內容中提取純文字
+function extractTextFromContent(content: any): string {
+  if (!content) return '';
   
-  if (!post) return <div className="min-h-screen flex items-center justify-center">載入中...</div>;
+  let text = '';
+  
+  if (typeof content === 'string') {
+    return content;
+  }
+  
+  if (Array.isArray(content)) {
+    content.forEach(item => {
+      if (item.type === 'paragraph' && item.children) {
+        item.children.forEach((child: any) => {
+          if (child.text) {
+            text += child.text;
+          }
+        });
+        text += ' ';
+      } else if (item.type === 'heading' && item.children) {
+        item.children.forEach((child: any) => {
+          if (child.text) {
+            text += child.text;
+          }
+        });
+        text += ' ';
+      }
+    });
+  }
+  
+  return text.trim();
+}
 
-  return (
-    <>
-      {/* 頂部閱讀進度條（可選） */}
-      {showTopProgressBar && <ReadingProgressBar variant="top" />}
-      
-      <div className="relative max-w-5xl mx-auto py-8 px-4">
-        {/* 主內容區塊，右側預留 TOC 空間 */}
-        <div className={cn("flex-1 min-w-0", headings.length > 0 ? "lg:pr-[288px]" : "")}>
-          <Link href="/blog" className="text-blue-600 mb-4 inline-block hover:text-blue-700 transition-colors">
-            &larr; 返回列表
-          </Link>
-          {post?.coverImageUrl && (
-            <img src={post.coverImageUrl} alt={post?.title ?? ''} className="w-full aspect-[16/9] object-cover rounded-lg mb-6 shadow-md" />
-          )}
-          <h1 className="text-3xl font-bold mb-2 text-gray-900">{post?.title}</h1>
-          <div className="text-sm text-gray-500 mb-4">
-            {post.created_at ? new Date(post.created_at).toLocaleDateString('zh-TW') : ''}
-            {post.category?.name && <> · {post.category.name}</>}
-          </div>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {post.tags?.map(tag => (
-              <span key={tag.id} className="inline-block bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full hover:bg-gray-200 transition-colors">
-                {tag.name}
-              </span>
-            ))}
-          </div>
-          <div className="prose max-w-none">
-            <PostEditor
-              value={post.content}
-              readOnly
-              className='border-none bg-inherit !p-0'
-            />
-          </div>
-        </div>
+// 生成結構化資料
+function generateStructuredData(post: Post) {
+  const contentText = extractTextFromContent(post.content);
+  
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: contentText.length > 200 ? contentText.substring(0, 200) + '...' : contentText,
+    image: post.coverImageUrl ? [post.coverImageUrl] : [],
+    author: {
+      '@type': 'Person',
+      name: '部落格作者'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: '我的部落格',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/logo.png`
+      }
+    },
+    datePublished: post.created_at,
+    dateModified: post.updated_at || post.created_at,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/blog/${post.slug}`
+    },
+    articleSection: post.category?.name,
+    keywords: post.tags?.map(tag => tag.name).join(', '),
+    wordCount: contentText.length,
+  };
+}
+
+export default async function BlogDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/posts/${id}`, {
+      next: { revalidate: 3600 } // 快取1小時
+    });
+    
+    if (!res.ok) {
+      notFound();
+    }
+
+    const result = await res.json();
+    const post: Post = result.data;
+
+    if (!post) {
+      notFound();
+    }
+
+    const structuredData = generateStructuredData(post);
+
+    return (
+      <>
+        {/* 結構化資料 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
         
-        {/* 目錄組件 */}
-        {headings.length > 0 && (
-          <ArticleToc headings={headings} activeId={activeId} />
-        )}
-      </div>
-      
-      {/* 置頂按鈕（始終顯示，但進度環配合設置） */}
-      <ScrollToTop 
-        triggerDistance={100} 
-        showProgress={!showTopProgressBar} 
-      />
-
-      {/* 進度條設置切換 */}
-      <ProgressBarToggle 
-        onToggle={(showTopBar) => setShowTopProgressBar(showTopBar)}
-        defaultShowTopBar={true}
-      />
-    </>
-  );
+        {/* 客戶端組件處理互動功能 */}
+        <BlogDetail post={post} />
+      </>
+    );
+  } catch (error) {
+    console.error('獲取文章失敗:', error);
+    notFound();
+  }
 } 

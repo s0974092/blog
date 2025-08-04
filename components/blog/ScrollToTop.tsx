@@ -43,7 +43,7 @@ export default function ScrollToTop({ className, triggerDistance = 100, showProg
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-6 right-6 z-[60] flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-white group relative ${className || ''}`}
+      className={`fixed bottom-6 right-6 z-[60] flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-white group ${className || ''}`}
       aria-label="回到頂部"
       style={{
         width: SIZE,
@@ -51,7 +51,6 @@ export default function ScrollToTop({ className, triggerDistance = 100, showProg
         borderRadius: '50%',
         padding: 0,
         border: 'none',
-        position: 'fixed',
         bottom: '24px',
         right: '24px',
         zIndex: 60

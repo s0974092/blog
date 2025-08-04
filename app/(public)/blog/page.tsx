@@ -2,14 +2,13 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import BlogCard from '@/components/blog/BlogCard';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Post } from '@/types/post-card';
 import { getClientUser } from '@/lib/auth';
 import BlogSearchBar from '@/components/blog/BlogSearchBar';
 import { AnimatePresence, motion } from 'framer-motion';
 import BlogCardSkeleton from '@/components/blog/BlogCardSkeleton';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 interface User {
   id: string;
@@ -35,6 +34,18 @@ export default function BlogPage() {
   const [subCategoryId, setSubCategoryId] = useState<number | ''>('');
   const [sort, setSort] = useState('newest');
   const [isResetLoading, setIsResetLoading] = useState(false);
+
+  // 滾動方向監聽
+  const scrollDirection = useScrollDirection();
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+
+  useEffect(() => {
+    if (scrollDirection === 'down') {
+      setIsHeaderVisible(false);
+    } else {
+      setIsHeaderVisible(true);
+    }
+  }, [scrollDirection]);
 
   // 取得登入狀態
   useEffect(() => {
@@ -101,8 +112,12 @@ export default function BlogPage() {
 
   return (
     // header 已搬到 layout.tsx，這裡只保留 main
-    <main className="flex flex-col gap-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="sticky top-[84px] z-40 backdrop-blur bg-transparent rounded-lg p-2">
+    <main className="flex flex-col gap-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div 
+        className={`sticky z-40 backdrop-blur bg-transparent rounded-lg p-2 transition-all duration-300 ease-in-out ${
+          isHeaderVisible ? 'top-[84px]' : 'top-0'
+        }`}
+      >
         <BlogSearchBar
           search={search}
           categoryId={categoryId}

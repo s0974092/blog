@@ -9,6 +9,8 @@ interface ProgressBarToggleProps {
   defaultShowTopBar?: boolean;
 }
 
+const STORAGE_KEY = 'progressBarPreference';
+
 // 進度條設置面板組件
 function ProgressSettings({ showTopBar, onToggle, isOpen, onClose }: { 
   showTopBar: boolean; 
@@ -86,9 +88,30 @@ export default function ProgressBarToggle({ onToggle, defaultShowTopBar = true }
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // 初始化時從 localStorage 讀取用戶偏好
+  useEffect(() => {
+    try {
+      const savedPreference = localStorage.getItem(STORAGE_KEY);
+      if (savedPreference !== null) {
+        const preference = JSON.parse(savedPreference);
+        setShowTopBar(preference.showTopBar);
+        onToggle(preference.showTopBar);
+      }
+    } catch (error) {
+      console.warn('無法讀取進度條偏好設置:', error);
+    }
+  }, [onToggle]);
+
   const handleToggle = (newValue: boolean) => {
     setShowTopBar(newValue);
     onToggle(newValue);
+    
+    // 保存到 localStorage
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ showTopBar: newValue }));
+    } catch (error) {
+      console.warn('無法保存進度條偏好設置:', error);
+    }
   };
 
   // 點擊外部關閉面板

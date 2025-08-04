@@ -13,19 +13,20 @@ export async function getServerUser() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get: async (name: string) => {
-            const cookieStore = await cookies();
-            return cookieStore.get(name)?.value;
-          },
           getAll: async () => {
-            const cookieStore = await cookies();
-            return Array.from(cookieStore.getAll());
+            try {
+              const cookieStore = await cookies();
+              return Array.from(cookieStore.getAll());
+            } catch (error) {
+              console.error('獲取所有 cookies 失敗:', error);
+              return [];
+            }
           },
-          set: () => {}, // 只讀不寫
-          remove: () => {} // 只讀不寫
+          setAll: () => {}, // 只讀不寫
         } as CookieMethodsServer
       }
     );
+    
     const { data, error } = await supabase.auth.getUser();
     
     if (error) {
@@ -34,9 +35,11 @@ export async function getServerUser() {
     }
 
     if (!data.user) {
+      console.log('沒有找到用戶數據');
       return null;
     }
 
+    console.log('成功獲取用戶信息:', data.user.email);
     return {
       id: data.user.id,
       email: data.user.email,

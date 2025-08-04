@@ -139,31 +139,152 @@ export function useHeadings(content: any) {
   const [headings, setHeadings] = useState<TocHeading[]>([]);
 
   useEffect(() => {
-    // 延遲解析 headings，確保 PostEditor 完全初始化
-    const timer = setTimeout(() => {
+    console.log('useHeadings: content changed, starting to look for headings');
+    let observer: MutationObserver | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const findAndSetHeadings = () => {
+      console.log('useHeadings: searching for headings in DOM');
+      
+      // 先檢查 PostEditor 容器是否存在
+      const proseContainer = document.querySelector('.prose');
+      const yooptaContainer = document.querySelector('[data-yoopta-editor]');
+      console.log('useHeadings: prose container exists:', !!proseContainer);
+      console.log('useHeadings: yoopta container exists:', !!yooptaContainer);
+      
+      // 檢查所有可能的容器
+      const allContainers = document.querySelectorAll('*[class*="editor"], *[class*="content"], *[class*="prose"], [data-yoopta-editor], [data-yoopta-element]');
+      console.log('useHeadings: found containers with editor/content/prose classes:', allContainers.length);
+      allContainers.forEach((container, index) => {
+        console.log(`useHeadings: container ${index}:`, container.tagName, container.className, container.getAttribute('data-yoopta-editor'), container.getAttribute('data-yoopta-element'));
+      });
+      
+      if (proseContainer) {
+        console.log('useHeadings: prose container HTML:', proseContainer.innerHTML.substring(0, 500));
+      }
+      if (yooptaContainer) {
+        console.log('useHeadings: yoopta container HTML:', yooptaContainer.innerHTML.substring(0, 500));
+      }
+      
       // 直接從 DOM 獲取標題元素，而不是從 HTML 解析
       const selectors = [
         '.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6',
         '[data-yoopta-editor] h1, [data-yoopta-editor] h2, [data-yoopta-editor] h3, [data-yoopta-editor] h4, [data-yoopta-editor] h5, [data-yoopta-editor] h6',
+        'article h1, article h2, article h3, article h4, article h5, article h6', // 只在 article 內搜索
+        '.editor h1, .editor h2, .editor h3, .editor h4, .editor h5, .editor h6', // 嘗試 .editor 容器
+        '.content h1, .content h2, .content h3, .content h4, .content h5, .content h6', // 嘗試 .content 容器
+        '[data-yoopta-element] h1, [data-yoopta-element] h2, [data-yoopta-element] h3, [data-yoopta-element] h4, [data-yoopta-element] h5, [data-yoopta-element] h6', // 嘗試 Yoopta 元素
+        '.yoopta-heading' // 嘗試 Yoopta 的標題類
       ];
 
       let headingElements: HTMLElement[] = [];
       
       for (const selector of selectors) {
         const elements = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+        console.log(`useHeadings: selector "${selector}" found ${elements.length} elements`);
         if (elements.length > 0) {
           headingElements = elements;
           break;
         }
       }
 
-      if (headingElements.length > 0) {
-        const extractedHeadings = generateUniqueIds(headingElements);
-        setHeadings(extractedHeadings);
+      // 如果沒有找到，嘗試在整個頁面搜索，但排除主標題
+      if (headingElements.length === 0) {
+        const allHeadings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')) as HTMLElement[];
+        console.log(`useHeadings: found ${allHeadings.length} total headings`);
+        
+        // 過濾掉主標題（通常在文章標題區域）
+        headingElements = allHeadings.filter(heading => {
+          // 檢查是否在文章內容區域內
+          const isInArticle = heading.closest('article') || heading.closest('.prose') || heading.closest('[data-yoopta-editor]') || heading.closest('.editor') || heading.closest('.content') || heading.closest('[data-yoopta-element]');
+          // 檢查是否為主標題（通常在頁面頂部）
+          const isMainTitle = heading.closest('h1') && heading.textContent && heading.textContent.length < 100;
+          
+          // 檢查是否在 PostEditor 容器內
+          const isInPostEditor = heading.closest('[data-yoopta-element]') || heading.closest('.yoopta-editor') || heading.closest('[data-yoopta-editor]');
+          
+          // 檢查是否為頁面主標題（排除文章標題）
+          const isPageTitle = heading.textContent === '部落格' || heading.textContent === 'Blog';
+          
+          console.log(`useHeadings: heading "${heading.textContent}" - inArticle: ${!!isInArticle}, isMainTitle: ${isMainTitle}, isInPostEditor: ${!!isInPostEditor}, isPageTitle: ${isPageTitle}`);
+          
+          // 放寬條件：只要在 PostEditor 內且不是頁面主標題就包含
+          return isInPostEditor && !isPageTitle;
+        });
+        
+        console.log(`useHeadings: after filtering, found ${headingElements.length} content headings`);
       }
-    }, 2000); // 延遲 2 秒確保 PostEditor 完全渲染
 
-    return () => clearTimeout(timer);
+      if (headingElements.length > 0) {
+        console.log('useHeadings: found heading elements:', headingElements);
+        const extractedHeadings = generateUniqueIds(headingElements);
+        console.log('useHeadings: extracted headings:', extractedHeadings);
+        setHeadings(extractedHeadings);
+        return true; // 找到標題
+      }
+      console.log('useHeadings: no heading elements found');
+      return false; // 沒找到標題
+    };
+
+    // 立即嘗試查找標題
+    if (findAndSetHeadings()) {
+      console.log('useHeadings: found headings immediately');
+      return;
+    }
+
+    console.log('useHeadings: setting up MutationObserver');
+    // 如果沒找到，設置 MutationObserver 來監聽 DOM 變化
+    observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          // 檢查新增的節點是否包含標題
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              // 檢查新增的元素本身是否是標題
+              if (element.matches && element.matches('h1, h2, h3, h4, h5, h6')) {
+                console.log('useHeadings: found heading element in mutation');
+                if (findAndSetHeadings()) {
+                  observer?.disconnect();
+                  return;
+                }
+              }
+              // 檢查新增的元素內部是否有標題
+              const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6');
+              if (headings.length > 0) {
+                console.log('useHeadings: found headings inside added element');
+                if (findAndSetHeadings()) {
+                  observer?.disconnect();
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 開始觀察 DOM 變化
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // 設置一個備用的超時機制（2 秒），給 PostEditor 更多時間渲染
+    timeoutId = setTimeout(() => {
+      console.log('useHeadings: timeout reached, forcing search');
+      findAndSetHeadings();
+      observer?.disconnect();
+    }, 2000);
+
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [content]);
 
   return headings;
