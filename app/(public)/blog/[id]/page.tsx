@@ -2,12 +2,13 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Post } from '@/types/post-card';
 import { BlogDetail } from '@/components/blog/BlogDetail';
+import { SITE_CONFIG } from '@/lib/constants';
 
 // 生成動態metadata
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   try {
     const { id } = await params;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/posts/${id}`, {
+    const res = await fetch(`${SITE_CONFIG.url}/api/posts/${id}`, {
       next: { revalidate: 3600 } // 快取1小時
     });
     
@@ -44,26 +45,26 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     ].filter(Boolean).join(', ');
 
     return {
-      title: `${post.title} - 我的部落格`,
+      title: `${post.title}`,
       description,
       keywords,
-      authors: [{ name: '部落格作者' }],
+      authors: [{ name: SITE_CONFIG.author }],
       openGraph: {
         title: post.title,
         description,
         type: 'article',
-        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/blog/${post.slug}`,
+        url: `${SITE_CONFIG.url}/blog/${post.slug}`,
         images: post.coverImageUrl ? [
           {
             url: post.coverImageUrl,
-            width: 1200,
+            width: 200,
             height: 630,
             alt: post.title,
           }
         ] : [],
         publishedTime: post.created_at,
         modifiedTime: post.updated_at,
-        authors: ['部落格作者'],
+        authors: [SITE_CONFIG.author],
         tags: post.tags?.map(tag => tag.name) || [],
       },
       twitter: {
@@ -73,7 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         images: post.coverImageUrl ? [post.coverImageUrl] : [],
       },
       alternates: {
-        canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/blog/${post.slug}`,
+        canonical: `${SITE_CONFIG.url}/blog/${post.slug}`,
       },
     };
   } catch (error) {
@@ -130,21 +131,21 @@ function generateStructuredData(post: Post) {
     image: post.coverImageUrl ? [post.coverImageUrl] : [],
     author: {
       '@type': 'Person',
-      name: '部落格作者'
+      name: SITE_CONFIG.author
     },
     publisher: {
       '@type': 'Organization',
-      name: '我的部落格',
+      name: SITE_CONFIG.author,
       logo: {
         '@type': 'ImageObject',
-        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/logo.png`
+        url: `${SITE_CONFIG.url}/logo.png`
       }
     },
     datePublished: post.created_at,
     dateModified: post.updated_at || post.created_at,
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/blog/${post.slug}`
+      '@id': `${SITE_CONFIG.url}/blog/${post.slug}`
     },
     articleSection: post.category?.name,
     keywords: post.tags?.map(tag => tag.name).join(', '),
@@ -155,7 +156,7 @@ function generateStructuredData(post: Post) {
 export default async function BlogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/posts/${id}`, {
+    const res = await fetch(`${SITE_CONFIG.url}/api/posts/${id}`, {
       next: { revalidate: 3600 } // 快取1小時
     });
     

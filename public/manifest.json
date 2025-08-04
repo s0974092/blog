@@ -1,7 +1,7 @@
 {
-  "name": "我的部落格",
-  "short_name": "部落格",
-  "description": "一個專注於技術分享、生活感悟的部落格平台",
+  "name": "YJ's Tech & Life Notes",
+  "short_name": "YJ's Notes",
+  "description": "一個專注於生活、科技與產品思維分享及感悟的部落格。",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

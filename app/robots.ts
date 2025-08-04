@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { SITE_CONFIG } from '@/lib/constants';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = SITE_CONFIG.url;
   const isDevelopment = baseUrl.includes('localhost');
   
   const rules = [
