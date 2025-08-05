@@ -76,13 +76,6 @@ interface PostsResponse {
   }
 }
 
-interface SubCategoriesResponse {
-  success: boolean
-  data: {
-    subCategories: SubCategory[]
-  }
-}
-
 export default function CategoriesPage() {
   const router = useRouter()
   const queryClient = useQueryClient()

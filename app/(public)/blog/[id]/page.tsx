@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 // 從內容中提取純文字
-function extractTextFromContent(content: any): string {
+function extractTextFromContent(content: unknown): string {
   if (!content) return '';
   
   let text = '';
@@ -98,20 +98,29 @@ function extractTextFromContent(content: any): string {
   
   if (Array.isArray(content)) {
     content.forEach(item => {
-      if (item.type === 'paragraph' && item.children) {
-        item.children.forEach((child: any) => {
-          if (child.text) {
-            text += child.text;
-          }
-        });
-        text += ' ';
-      } else if (item.type === 'heading' && item.children) {
-        item.children.forEach((child: any) => {
-          if (child.text) {
-            text += child.text;
-          }
-        });
-        text += ' ';
+      if (typeof item === 'object' && item !== null && 'type' in item && 'children' in item) {
+        const typedItem = item as { type: string; children?: unknown[] };
+        if (typedItem.type === 'paragraph' && typedItem.children) {
+          typedItem.children.forEach((child: unknown) => {
+            if (typeof child === 'object' && child !== null && 'text' in child) {
+              const typedChild = child as { text?: string };
+              if (typedChild.text) {
+                text += typedChild.text;
+              }
+            }
+          });
+          text += ' ';
+        } else if (typedItem.type === 'heading' && typedItem.children) {
+          typedItem.children.forEach((child: unknown) => {
+            if (typeof child === 'object' && child !== null && 'text' in child) {
+              const typedChild = child as { text?: string };
+              if (typedChild.text) {
+                text += typedChild.text;
+              }
+            }
+          });
+          text += ' ';
+        }
       }
     });
   }

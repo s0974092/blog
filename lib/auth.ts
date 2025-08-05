@@ -30,11 +30,12 @@ export async function signIn(credentials: LoginCredentials) {
     const { data, error } = await supabase.auth.signInWithPassword(credentials);
     if (error) throw error;
     return { success: true, data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('登入失敗:', error);
+    const errorMessage = error instanceof Error ? error.message : '請檢查您的郵箱和密碼';
     return { 
       success: false, 
-      error: error.message || '請檢查您的郵箱和密碼'
+      error: errorMessage
     };
   }
 }
@@ -93,8 +94,9 @@ export async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     return { success: true };
-  } catch (error: any) {
-    console.error('登出錯誤:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    console.error('登出錯誤:', error);
+    const errorMessage = error instanceof Error ? error.message : '登出失敗';
+    return { success: false, error: errorMessage };
   }
 }

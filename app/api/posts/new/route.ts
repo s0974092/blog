@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { slug, coverImageUrl } = validation.data;
+    const { slug } = validation.data;
 
     // 檢查文章名稱是否已存在
     const existingSlug = await prisma.post.findFirst({

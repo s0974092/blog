@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client'
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function GET(
     request: Request,
@@ -50,7 +50,7 @@ export async function GET(
       }));
       // 將原本的post物件中tags移除，並重新加入轉換後的tags
       // 建立一個新的物件，幾post物件的所有屬性，除了tags外
-      const { tags, ...rest } = post;
+      const { ...rest } = post;
       const transformedPost = {
         ...rest,
         tags: transformedTags,

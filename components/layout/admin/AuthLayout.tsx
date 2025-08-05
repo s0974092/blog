@@ -1,17 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import UserProfile from './UserProfile';
 import AdminLayout from './AdminLayout';
 import { getClientUser } from '@/lib/auth';
+
+interface User {
+  email: string;
+  user_metadata: {
+    display_name: string;
+  };
+}
 
 export default function AuthLayout({
   children
 }: {
   children: React.ReactNode
 }) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,9 +26,9 @@ export default function AuthLayout({
       try {
         const userData = await getClientUser();
         if (userData) {
-          setUser(userData);
+          setUser(userData as User);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('獲取用戶信息失敗:', error);
       } finally {
         setLoading(false);
@@ -44,7 +50,7 @@ export default function AuthLayout({
   // 用戶資料應該存在，因為中間件已經過濾掉未登入的請求
   return (
     <AdminLayout
-      userProfile={<UserProfile user={user} />}
+      userProfile={user ? <UserProfile user={user} /> : null}
     >
       {children}
     </AdminLayout>

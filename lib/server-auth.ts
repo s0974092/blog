@@ -7,7 +7,6 @@ import { CookieMethodsServer, createServerClient } from '@supabase/ssr';
  */
 export async function getServerUser() {
   try {
-    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

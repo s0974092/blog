@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Menu } from 'lucide-react';
 import { TocHeading } from '@/hooks/useActiveHeading';
@@ -88,9 +88,6 @@ const handleTocClick = (id: string, headings: TocHeading[], onClose?: () => void
       );
       
       if (matchingHeadings.length > 0) {
-        // 找到目標標題在 headings 數組中的索引
-        const targetIndex = headings.findIndex(h => h.id === id);
-        
         // 找到相同文本的標題在 DOM 中的索引
         const sameTextHeadings = headings.filter(h => h.text === targetHeading.text);
         const targetInSameTextIndex = sameTextHeadings.findIndex(h => h.id === id);

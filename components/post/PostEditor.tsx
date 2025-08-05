@@ -74,7 +74,7 @@ const plugins = [
     options: {
       async onUpload(file: File) {
         const fileName = generateFileName(file.name);
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
           .from('post-content-images')
           .upload(fileName, file);
         if (error) throw error;
@@ -217,19 +217,25 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
       const extractExistingImages = (content: YooptaContentValue) => {
         if (!content) return;
         
-        const traverseNodes = (nodes: any[]) => {
+        const traverseNodes = (nodes: unknown[]) => {
           for (const node of nodes) {
-            if (node.type === 'image' && node.props?.src) {
-              imageTracker.addImage(node.props.src);
-            } else if (node.type === 'Image' && node.value && Array.isArray(node.value)) {
-              for (const valueNode of node.value) {
-                if (valueNode.type === 'image' && valueNode.props?.src) {
-                  imageTracker.addImage(valueNode.props.src);
+            if (typeof node === 'object' && node !== null) {
+              const typedNode = node as { type?: string; props?: { src?: string }; children?: unknown[]; value?: unknown[] };
+              if (typedNode.type === 'image' && typedNode.props?.src) {
+                imageTracker.addImage(typedNode.props.src);
+              } else if (typedNode.type === 'Image' && typedNode.value && Array.isArray(typedNode.value)) {
+                for (const valueNode of typedNode.value) {
+                  if (typeof valueNode === 'object' && valueNode !== null) {
+                    const typedValueNode = valueNode as { type?: string; props?: { src?: string } };
+                    if (typedValueNode.type === 'image' && typedValueNode.props?.src) {
+                      imageTracker.addImage(typedValueNode.props.src);
+                    }
+                  }
                 }
               }
-            }
-            if (node.children && node.children.length > 0) {
-              traverseNodes(node.children);
+              if (typedNode.children && typedNode.children.length > 0) {
+                traverseNodes(typedNode.children);
+              }
             }
           }
         };
@@ -265,7 +271,7 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
 
   // 監聽編輯器事件來捕獲刪除和替換操作
   useEffect(() => {
-    const handleEditorEvent = (event: any) => {
+    const handleEditorEvent = (event: { type?: string; target?: { type?: string; src?: string; props?: { src?: string } } }) => {
       // 監聽編輯器的刪除事件
       if (event.type === 'delete' || event.type === 'remove') {
         // 檢查是否刪除了圖片節點
@@ -283,7 +289,7 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
         // 檢查是否替換了圖片節點
         if (event.target && event.target.type === 'image') {
           const oldImageUrl = event.target.src || event.target.props?.src;
-          const newImageUrl = event.newSrc || event.newProps?.src;
+          const newImageUrl = (event as { newSrc?: string; newProps?: { src?: string } }).newSrc || (event as { newSrc?: string; newProps?: { src?: string } }).newProps?.src;
           
           if (oldImageUrl && newImageUrl) {
             imageTracker.removeImage(oldImageUrl);
@@ -294,7 +300,7 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
     };
 
     // 監聽編輯器命令
-    const handleEditorCommand = (command: any) => {
+    const handleEditorCommand = (command: { type?: string; oldSrc?: string; newSrc?: string }) => {
       // 檢查是否為刪除命令
       if (command.type === 'delete' || command.type === 'remove') {
         // 獲取當前編輯器內容並檢查是否有圖片被刪除
@@ -385,12 +391,11 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
     // 添加事件監聽器
     const editorElement = selectionRef?.current;
     if (editorElement) {
-      // 監聽自定義事件
-      editorElement.addEventListener('yoopta:delete', handleEditorEvent);
-      editorElement.addEventListener('yoopta:remove', handleEditorEvent);
-      editorElement.addEventListener('yoopta:replace', handleEditorEvent);
-      editorElement.addEventListener('yoopta:replaceImage', handleEditorEvent);
-      
+      // 監聽自定義事件，將事件處理函數簽名調整為標準 EventListener
+      editorElement.addEventListener('yoopta:delete', handleEditorEvent as EventListener);
+      editorElement.addEventListener('yoopta:remove', handleEditorEvent as EventListener);
+      editorElement.addEventListener('yoopta:replace', handleEditorEvent as EventListener);
+      editorElement.addEventListener('yoopta:replaceImage', handleEditorEvent as EventListener);
       // 監聽編輯器命令
       editorElement.addEventListener('yoopta:command', handleEditorCommand);
       
@@ -413,11 +418,13 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
       });
       
       return () => {
-        editorElement.removeEventListener('yoopta:delete', handleEditorEvent);
-        editorElement.removeEventListener('yoopta:remove', handleEditorEvent);
-        editorElement.removeEventListener('yoopta:replace', handleEditorEvent);
-        editorElement.removeEventListener('yoopta:replaceImage', handleEditorEvent);
-        editorElement.removeEventListener('yoopta:command', handleEditorCommand);
+        // 這裡需要將事件處理函數的簽名調整為標準 EventListener
+        // 並且 removeEventListener 的第二個參數必須與 addEventListener 完全一致
+        editorElement.removeEventListener('yoopta:delete', handleEditorEvent as EventListener);
+        editorElement.removeEventListener('yoopta:remove', handleEditorEvent as EventListener);
+        editorElement.removeEventListener('yoopta:replace', handleEditorEvent as EventListener);
+        editorElement.removeEventListener('yoopta:replaceImage', handleEditorEvent as EventListener);
+        editorElement.removeEventListener('yoopta:command', handleEditorCommand as EventListener);
         document.removeEventListener('click', handleGlobalClick);
         observer.disconnect();
       };
@@ -432,7 +439,7 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
 
   return (
     <div
-      ref={selectionRef as any}
+      ref={selectionRef as React.RefObject<HTMLDivElement>}
       className={cn(
         'border rounded-md px-3 py-2 min-h-[180px] bg-white transition-all duration-150 w-full',
         // 只在非只讀模式下顯示 focus 邊框
@@ -498,3 +505,5 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
     </div>
   );
 });
+
+PostEditor.displayName = 'PostEditor';

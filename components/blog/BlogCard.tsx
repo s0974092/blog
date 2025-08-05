@@ -2,6 +2,7 @@
 
 import { Post } from '@/types/post-card';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 interface BlogCardProps {
@@ -21,9 +22,11 @@ export default function BlogCard({ post, onCategoryClick, onSubCategoryClick, on
     >
       {post.coverImageUrl && (
         <Link href={`/blog/${post.slug}`}>
-          <img
+          <Image
             src={post.coverImageUrl}
             alt={post.title}
+            width={600}
+            height={338}
             className="w-full aspect-[16/9] object-cover"
           />
         </Link>

@@ -22,6 +22,7 @@ export async function PUT(
 
     return NextResponse.json(subCategory)
   } catch (error) {
+    console.error('更新子主題失敗:', error)
     return NextResponse.json(
       { error: '更新子主題失敗' },
       { status: 500 }
@@ -62,6 +63,7 @@ export async function GET(
       data: subCategory
     })
   } catch (error) {
+    console.error('取得子主題失敗:', error)
     return NextResponse.json(
       { success: false, error: '取得子主題失敗' },
       { status: 500 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Post } from '@/types/post-card';
 import { cn } from '@/lib/utils';
 import { PostEditor } from '@/components/post/PostEditor';
@@ -18,7 +19,7 @@ interface BlogDetailProps {
 }
 
 // 簡單檢查文章內容中是否有標題的函數
-function hasHeadingsInContent(content: any): boolean {
+function hasHeadingsInContent(content: unknown): boolean {
   if (!content) return false;
   
   // 將內容轉換為字符串進行檢查
@@ -107,11 +108,12 @@ export function BlogDetail({ post }: BlogDetailProps) {
           {/* 文章內容 */}
           <div>
             {post?.coverImageUrl && (
-              <img 
+              <Image 
                 src={post.coverImageUrl} 
                 alt={post?.title ?? ''} 
+                width={640}
+                height={360}
                 className="w-full aspect-[16/9] object-cover rounded-lg mb-6 shadow-md"
-                loading="lazy"
               />
             )}
             <h1 className="text-3xl font-bold mb-2 text-gray-900">{post?.title}</h1>

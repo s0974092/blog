@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -27,7 +27,7 @@ import {
 import { MultiSelect } from "@/components/ui/multi-select"
 import { PlusIcon } from "lucide-react"
 import { debounce } from 'lodash'
-import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Edit3, X } from "lucide-react"
+import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Edit3 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
 import { generatePinyin, generateFileName } from "@/lib/utils";
@@ -195,6 +195,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     }, [newCategoryId, setNewCategoryId])
   
     // 當主題更新後，設置表單值
+     
     useEffect(() => {
       console.log(newlyAddedCategoryId);
       
@@ -207,6 +208,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     }, [categories, subCategories, newlyAddedCategoryId, newlyAddedSubCategoryId, form])
   
     // 處理新增的子主題
+     
     useEffect(() => {
       console.log(newSubCategoryId);
       if (newSubCategoryId) {
@@ -234,6 +236,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     }, [newSubCategoryId, setNewSubCategoryId])
   
     // 當子主題更新後，設置表單值
+     
     useEffect(() => {
       console.log(newlyAddedSubCategoryId);
 
@@ -251,6 +254,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     }, [subCategories, newlyAddedSubCategoryId, form])
     
     // 檢查是否有新的標籤ID
+     
     useEffect(() => {
       console.log("從 Context 獲取的新標籤 ID:", contextNewTagId);
       
@@ -310,7 +314,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     }, [isEditorFullscreen]);
 
     // 當主題改變時載入對應的子主題
-    const handleCategoryChange = async (categoryId: number) => {
+    const handleCategoryChange = useCallback(async (categoryId: number) => {
       if (!categoryId) {
         setSubCategories([])
         form.setValue('subCategoryId', undefined)
@@ -328,7 +332,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         toast.error('載入子主題失敗')
         setSubCategories([])
       }
-    }
+    }, [form])
   
     // 根據標題自動生成 Slug
     const handleTitleChange = (title: string) => {
@@ -376,6 +380,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           form.setValue('slugStatus', 'success');
         }
       } catch (error) {
+        console.log('驗證 Slug 失敗', error);
         toast.error('驗證 Slug 失敗');
         form.setValue('slugStatus', 'error');
       }
@@ -413,7 +418,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       const u8arr = new Uint8Array(n);
       while (n--) u8arr[n] = bstr.charCodeAt(n);
       const file = new File([u8arr], fileName, { type: mime });
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('post-cover-images')
         .upload(fileName, file, { upsert: true });
       if (error) throw error;
@@ -428,7 +433,9 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         const parts = url.split('/');
         const fileName = parts[parts.length - 1];
         await supabase.storage.from('post-cover-images').remove([fileName]);
-      } catch {}
+      } catch (error) {
+        console.log('刪除圖片失敗', error);
+      }
     }
 
     // 儲存前格式轉換
@@ -494,6 +501,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         router.push(`/posts`);
         router.refresh();
       } catch (error) {
+        console.log('儲存前格式轉換失敗', error);
         toast.error(error instanceof Error ? error.message : "新增文章失敗");
       } finally {
         setIsSubmitting(false);
@@ -688,12 +696,9 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         {/* <div> */}
                           <PostImageUploader
                             value={field.value}
-                            onChange={(url, file) => {
+                            onChange={(url, _file) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                               field.onChange(url);
                               // 若需處理 file 上傳，請在 onSubmit 處理
-                            }}
-                            onRemove={() => {
-                              field.onChange(null);
                             }}
                             disabled={isSubmitting}
                             showPreviewOnly={true}
@@ -704,12 +709,9 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         <div>
                           <PostImageUploader
                             value={field.value}
-                            onChange={(url, file) => {
+                            onChange={(url, _file) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                               field.onChange(url);
                               // 若需處理 file 上傳，請在 onSubmit 處理
-                            }}
-                            onRemove={() => {
-                              field.onChange(null);
                             }}
                             disabled={isSubmitting}
                             showUploadOnly={true}
@@ -720,12 +722,9 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         <div className="w-full">
                           <PostImageUploader
                             value={field.value}
-                            onChange={(url, file) => {
+                            onChange={(url, _file) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                               field.onChange(url);
                               // 若需處理 file 上傳，請在 onSubmit 處理
-                            }}
-                            onRemove={() => {
-                              field.onChange(null);
                             }}
                             disabled={isSubmitting}
                             showAIGenerateOnly={true}
@@ -906,7 +905,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                 <FormField
                   control={form.control}
                   name="content"
-                  render={({ field }) => (
+                  render={({ field: _field }) => ( // eslint-disable-line @typescript-eslint/no-unused-vars
                     <FormItem>
                       <div className="flex items-center justify-between mb-2">
                         <FormLabel>內容</FormLabel>

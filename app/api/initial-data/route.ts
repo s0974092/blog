@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/initial-data - 獲取主題和標籤的初始數據
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const [categories, tags] = await Promise.all([
       prisma.category.findMany({

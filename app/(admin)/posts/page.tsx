@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { Search, PlusIcon, PencilIcon, Trash2Icon, Loader2 } from "lucide-react";
+import { PlusIcon, PencilIcon, Trash2Icon, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,

@@ -1,5 +1,35 @@
 # YJ's Tech & Life Notes - 部落格網站
 
+## 📊 專案狀態
+
+### 🏷️ 版本與技術
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/s0974092/blog)
+[![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.17-38B2AC.svg)](https://tailwindcss.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+
+### 🔧 開發工具
+[![npm](https://img.shields.io/badge/npm-latest-blue.svg)](https://www.npmjs.com/)
+[![Jest](https://img.shields.io/badge/Jest-Testing-yellow.svg)](https://jestjs.io/)
+[![ESLint](https://img.shields.io/badge/ESLint-Code%20Quality-purple.svg)](https://eslint.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-blue.svg)](https://www.prisma.io/)
+
+### 🗄️ 資料庫與服務
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E.svg)](https://supabase.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue.svg)](https://www.postgresql.org/)
+
+### 📄 許可證與品質
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Maintenance](https://img.shields.io/badge/maintenance-active-brightgreen.svg)](https://github.com/s0974092/blog)
+
+### 🚀 CI/CD 狀態
+[![CI/CD](https://github.com/s0974092/blog/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/s0974092/blog/actions)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
+[![Security](https://img.shields.io/badge/security-audit-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
+
 一個使用 Next.js 15、TypeScript、Tailwind CSS 和 Supabase 建立的現代化部落格網站。
 
 ## 🚀 功能特色
@@ -58,6 +88,73 @@ cp .env.example .env.local
 
 # 運行開發伺服器
 npm run dev
+```
+
+### 本機 CI 檢查
+
+在推送代碼到 GitHub 之前，您可以在本機運行檢查以確保 CI/CD 流程能夠順利通過：
+
+```bash
+# 基本檢查（推薦用於日常開發）
+npm run ci:basic
+
+# 快速檢查（包含安全審計）
+npm run ci:quick
+
+# 提交前檢查（包含代碼品質檢查）
+npm run ci:pre-commit
+
+# 推送前檢查（完整檢查）
+npm run ci:pre-push
+
+# 本地完整檢查（模擬 CI/CD 流程）
+npm run ci:local
+```
+
+#### 檢查內容說明
+
+- **TypeScript 類型檢查** - 確保代碼類型安全
+- **單元測試** - 運行 Jest 測試套件
+- **代碼品質檢查** - ESLint 靜態代碼分析
+- **安全審計** - 檢查依賴包的安全性
+- **構建檢查** - 確保 Next.js 應用能夠正常構建
+
+#### 檢查腳本詳情
+
+| 腳本 | 檢查內容 | 用途 | 執行時間 |
+|------|----------|------|----------|
+| `ci:basic` | TypeScript + 測試 | 日常開發檢查 | ~5秒 |
+| `ci:quick` | 基本檢查 + 安全審計 | 推送前快速檢查 | ~10秒 |
+| `ci:pre-commit` | 基本檢查 + 代碼品質 | Git 提交前檢查 | ~8秒 |
+| `ci:pre-push` | 完整檢查流程 | Git 推送前檢查 | ~15秒 |
+| `ci:local` | 模擬 CI/CD 流程 | 本地完整檢查 | ~20秒 |
+
+### 檢查腳本對比
+
+| 檢查項目 | ci:basic | ci:quick | ci:pre-commit | ci:pre-push | ci:local |
+|----------|----------|----------|---------------|-------------|----------|
+| TypeScript | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 單元測試 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 代碼品質 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 安全審計 | ❌ | ✅ | ❌ | ✅ | ✅ |
+| 構建檢查 | ❌ | ❌ | ❌ | ✅ | ✅ |
+
+### 代碼品質工具
+
+#### ESLint 配置
+專案使用嚴格的 ESLint 規則來確保代碼品質：
+
+- **錯誤級別規則**：未使用變數、prefer-const、debugger 語句
+- **警告級別規則**：any 類型、console 語句、React Hook 依賴
+- **最佳實踐**：nullish coalescing、optional chaining、類型斷言
+
+#### 自動修復
+```bash
+# 自動修復 ESLint 問題
+npm run lint:fix
+
+# 自動格式化代碼
+npm run format-fix
 ```
 
 ### 環境變數設定
@@ -181,3 +278,258 @@ blog/
 ---
 
 ⭐ 如果這個專案對您有幫助，請給我們一個 Star！
+
+## 📋 徽章使用指南
+
+### 靜態徽章
+這些徽章顯示固定的資訊，如版本、技術棧等：
+
+```markdown
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/s0974092/blog)
+[![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+```
+
+### 動態徽章
+這些徽章會根據實際狀態更新：
+
+```markdown
+[![CI/CD](https://github.com/s0974092/blog/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/s0974092/blog/actions)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
+```
+
+### 其他常用徽章
+
+#### 程式碼品質
+```markdown
+[![Code Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)](https://github.com/s0974092/blog)
+[![Code Quality](https://img.shields.io/badge/code%20quality-A%2B-brightgreen.svg)](https://github.com/s0974092/blog)
+[![Maintainability](https://img.shields.io/badge/maintainability-A-brightgreen.svg)](https://github.com/s0974092/blog)
+```
+
+#### 依賴狀態
+```markdown
+[![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)](https://github.com/s0974092/blog)
+[![Dev Dependencies](https://img.shields.io/badge/dev%20dependencies-up%20to%20date-brightgreen.svg)](https://github.com/s0974092/blog)
+[![npm](https://img.shields.io/badge/npm-latest-blue.svg)](https://www.npmjs.com/)
+```
+
+#### 社群徽章
+```markdown
+[![GitHub stars](https://img.shields.io/github/stars/s0974092/blog.svg)](https://github.com/s0974092/blog)
+[![GitHub forks](https://img.shields.io/github/forks/s0974092/blog.svg)](https://github.com/s0974092/blog)
+[![GitHub issues](https://img.shields.io/github/issues/s0974092/blog.svg)](https://github.com/s0974092/blog)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/s0974092/blog.svg)](https://github.com/s0974092/blog)
+```
+
+#### 部署狀態
+```markdown
+[![Deploy to Vercel](https://img.shields.io/badge/deploy%20to-vercel-black.svg)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fs0974092%2Fblog)
+[![Deploy to Netlify](https://img.shields.io/badge/deploy%20to-netlify-blue.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/s0974092/blog)
+```
+
+### 如何添加新徽章
+
+1. **訪問 [Shields.io](https://shields.io/)** - 徽章生成器
+2. **選擇徽章類型** - 靜態、動態、自定義等
+3. **配置徽章參數** - 顏色、文字、連結等
+4. **複製 Markdown 代碼** - 貼到 README.md 中
+
+### 徽章最佳實踐
+
+- ✅ 使用相關的顏色（綠色表示成功，紅色表示錯誤等）
+- ✅ 提供有用的連結（點擊徽章可跳轉到相關頁面）
+- ✅ 保持徽章數量適中（建議不超過 10-15 個）
+- ✅ 定期更新版本號和狀態
+- ✅ 使用動態徽章顯示真實狀態
+
+### 自定義徽章顏色
+
+```markdown
+# 常用顏色代碼
+brightgreen  # 成功/通過
+green        # 一般成功
+yellow       # 警告/測試
+orange       # 構建中
+red          # 錯誤/失敗
+blue         # 資訊/版本
+lightgrey    # 無效/未知
+```
+
+---
+
+**注意**: 動態徽章需要設置相應的 CI/CD 流程才能正常工作。請確保您的 GitHub Actions 工作流程已正確配置。
+
+## 🛠️ 本機開發檢查指南
+
+### 為什麼需要本機檢查？
+
+在推送代碼到 GitHub 之前進行本機檢查可以：
+
+- ✅ **節省時間** - 避免推送後發現錯誤需要重新提交
+- ✅ **提高效率** - 快速發現並修復問題
+- ✅ **確保品質** - 在本地就確保代碼符合標準
+- ✅ **減少 CI 失敗** - 降低 GitHub Actions 失敗的機率
+
+### 檢查流程
+
+#### 1. 日常開發檢查
+```bash
+# 每次修改代碼後運行
+npm run ci:basic
+```
+
+#### 2. 提交前檢查
+```bash
+# 在 git commit 之前運行
+npm run ci:pre-commit
+```
+
+#### 3. 推送前檢查
+```bash
+# 在 git push 之前運行
+npm run ci:pre-push
+```
+
+### 自動化檢查（推薦）
+
+我們已經配置了 Git hooks，會自動在提交和推送前運行檢查：
+
+```bash
+# 安裝 husky（如果還沒安裝）
+npm install --save-dev husky
+
+# 啟用 Git hooks
+npx husky install
+
+# 現在每次 git commit 和 git push 都會自動運行檢查
+```
+
+### 檢查失敗時的處理
+
+如果檢查失敗，請按照以下步驟處理：
+
+1. **TypeScript 錯誤**
+   ```bash
+   # 查看詳細錯誤信息
+   npm run type-check
+   
+   # 修復類型錯誤後重新檢查
+   npm run ci:basic
+   ```
+
+2. **測試失敗**
+   ```bash
+   # 查看測試詳情
+   npm test
+   
+   # 修復測試後重新檢查
+   npm run ci:basic
+   ```
+
+3. **代碼品質問題**
+   ```bash
+   # 自動修復 ESLint 問題
+   npm run lint:fix
+   
+   # 手動檢查代碼品質
+   npm run lint
+   ```
+
+4. **安全審計失敗**
+   ```bash
+   # 查看安全問題詳情
+   npm audit
+   
+   # 修復安全問題
+   npm audit fix
+   ```
+
+### 檢查腳本對比
+
+| 檢查項目 | ci:basic | ci:quick | ci:pre-commit | ci:pre-push | ci:local |
+|----------|----------|----------|---------------|-------------|----------|
+| TypeScript | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 單元測試 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 代碼品質 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 安全審計 | ❌ | ✅ | ❌ | ✅ | ✅ |
+| 構建檢查 | ❌ | ❌ | ❌ | ✅ | ✅ |
+
+### 性能優化建議
+
+- **開發時**：使用 `npm run ci:basic`，只檢查最重要的項目
+- **提交前**：使用 `npm run ci:pre-commit`，確保代碼品質
+- **推送前**：使用 `npm run ci:pre-push`，完整檢查
+- **CI/CD**：使用 `npm run ci:local`，模擬 GitHub Actions
+
+### 故障排除
+
+#### 常見問題
+
+1. **檢查太慢**
+   ```bash
+   # 只運行 TypeScript 檢查
+   npm run type-check
+   
+   # 只運行測試
+   npm test
+   ```
+
+2. **內存不足**
+   ```bash
+   # 增加 Node.js 內存限制
+   NODE_OPTIONS="--max-old-space-size=4096" npm run ci:basic
+   ```
+
+3. **依賴問題**
+   ```bash
+   # 清理並重新安裝依賴
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+#### 跳過檢查（不推薦）
+
+如果緊急情況下需要跳過檢查：
+
+```bash
+# 跳過 pre-commit hook
+git commit --no-verify -m "緊急修復"
+
+# 跳過 pre-push hook
+git push --no-verify
+```
+
+**注意**：只有在緊急情況下才使用，平時應該修復問題而不是跳過檢查。
+
+### 代碼品質最佳實踐
+
+#### 1. 使用自動修復
+```bash
+# 自動修復 ESLint 問題
+npm run lint:fix
+
+# 自動格式化代碼
+npm run format-fix
+```
+
+#### 2. 定期檢查
+```bash
+# 每日開發結束前
+npm run ci:basic
+
+# 每週進行完整檢查
+npm run ci:local
+```
+
+#### 3. 團隊協作
+- 在 Pull Request 前運行完整檢查
+- 使用 `npm run ci:pre-push` 確保推送的代碼品質
+- 定期更新依賴包以修復安全漏洞
+
+---
+
+**💡 提示**：養成在本地運行檢查的習慣，這將大大提高您的開發效率和代碼品質！

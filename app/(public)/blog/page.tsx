@@ -4,20 +4,10 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import BlogCard from '@/components/blog/BlogCard';
 import { toast } from 'sonner';
 import type { Post } from '@/types/post-card';
-import { getClientUser } from '@/lib/auth';
 import BlogSearchBar from '@/components/blog/BlogSearchBar';
 import { AnimatePresence, motion } from 'framer-motion';
 import BlogCardSkeleton from '@/components/blog/BlogCardSkeleton';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
-
-interface User {
-  id: string;
-  email: string;
-  user_metadata: {
-    display_name: string;
-  };
-  role: string;
-}
 
 const PAGE_SIZE = 5;
 
@@ -26,7 +16,6 @@ export default function BlogPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   // 搜尋條件
   const [search, setSearch] = useState('');
@@ -47,13 +36,6 @@ export default function BlogPage() {
     }
   }, [scrollDirection]);
 
-  // 取得登入狀態
-  useEffect(() => {
-    getClientUser().then(userData => {
-      if (userData && userData.email) setUser(userData as User);
-    });
-  }, []);
-
   // 載入文章
   const fetchPosts = useCallback(async (pageNum: number, opts?: { reset?: boolean }) => {
     if (opts?.reset) setIsResetLoading(true);
@@ -73,8 +55,9 @@ export default function BlogPage() {
       const newPosts: Post[] = result.data.items || [];
       setPosts(prev => opts?.reset ? newPosts : (pageNum === 1 ? newPosts : [...prev, ...newPosts]));
       setHasMore(newPosts.length === PAGE_SIZE);
-    } catch (error: any) {
-      toast.error('獲取文章列表失敗', { description: error?.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '獲取文章列表失敗';
+      toast.error('獲取文章列表失敗', { description: errorMessage });
     } finally {
       setLoading(false);
       if (opts?.reset) setIsResetLoading(false);
@@ -84,31 +67,27 @@ export default function BlogPage() {
   // 初始載入 & 條件變更時重查
   useEffect(() => {
     fetchPosts(1, { reset: true });
-    setPage(1);
   }, [fetchPosts]);
 
   // Intersection Observer 監聽底部
   useEffect(() => {
     if (!hasMore || loading) return;
+    const currentLoaderRef = loaderRef.current;
     const observer = new window.IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting) {
-          setPage(prev => {
-            const nextPage = prev + 1;
-            fetchPosts(nextPage);
-            return nextPage;
-          });
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchPosts(nextPage);
         }
       },
       { threshold: 1 }
     );
-    if (loaderRef.current) observer.observe(loaderRef.current);
+    if (currentLoaderRef) observer.observe(currentLoaderRef);
     return () => {
-      if (loaderRef.current) observer.unobserve(loaderRef.current);
+      if (currentLoaderRef) observer.unobserve(currentLoaderRef);
     };
-  }, [hasMore, loading, fetchPosts]);
-
-  const displayName = user?.user_metadata?.display_name || user?.email;
+  }, [hasMore, loading, fetchPosts, page]);
 
   return (
     // header 已搬到 layout.tsx，這裡只保留 main

@@ -15,9 +15,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Image from "next/image";
-import { motion, useAnimationControls } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { checkSession, signIn } from '@/lib/auth';
 
@@ -40,7 +39,6 @@ const gradients = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,7 +64,7 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting, isDirty, isValid },
+    formState: { errors, isSubmitting, isValid },
     watch,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

@@ -16,12 +16,13 @@ export async function GET(request: NextRequest) {
 
     // 構建查詢條件
     let where: Prisma.PostWhereInput = all ? {} : { published: true };
+    // 如果有搜尋關鍵字，添加搜尋條件
     if (search) {
       where = {
         ...where,
         OR: [
           { title: { contains: search, mode: 'insensitive' } },
-          { content: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } as Prisma.JsonNullableFilter<"Post"> },
         ],
       };
     }
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 決定排序條件
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: Prisma.PostOrderByWithRelationInput = { createdAt: 'desc' };
     if (sort === 'oldest') orderBy = { createdAt: 'asc' };
     if (sort === 'title-asc') orderBy = { title: 'asc' };
     if (sort === 'title-desc') orderBy = { title: 'desc' };

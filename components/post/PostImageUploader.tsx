@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import Cropper from 'react-easy-crop';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-function getCroppedImg(imageSrc: string, croppedAreaPixels: any): Promise<Blob> {
+function getCroppedImg(imageSrc: string, croppedAreaPixels: { x: number; y: number; width: number; height: number }): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const image = new window.Image();
     image.src = imageSrc;
@@ -40,7 +40,6 @@ function getCroppedImg(imageSrc: string, croppedAreaPixels: any): Promise<Blob> 
 interface PostImageUploaderProps {
   value?: string; // 現有圖片URL
   onChange: (url: string | null, file?: File | null) => void;
-  onRemove?: () => void; // 新增移除回調函數
   disabled?: boolean;
   showPreviewOnly?: boolean; // 只顯示預覽
   showUploadOnly?: boolean; // 只顯示上傳
@@ -50,23 +49,21 @@ interface PostImageUploaderProps {
 export const PostImageUploader: React.FC<PostImageUploaderProps> = ({ 
   value, 
   onChange, 
-  onRemove, 
   disabled,
   showPreviewOnly = false,
   showUploadOnly = false,
   showAIGenerateOnly = false
 }) => {
   const [preview, setPreview] = useState<string | null>(value || null);
-  const [file, setFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showCrop, setShowCrop] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [isUploading] = useState(false);
 
   // 監聽 value 變化，同步 preview 狀態
   useEffect(() => {
@@ -99,19 +96,23 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
       const data = await res.json();
       if (!res.ok || !data.image) throw new Error(data.error || 'AI 生成圖片失敗');
       setPreview(data.image); // base64 預覽
-      setFile(null);
       onChange(data.image, null); // 將 base64 傳給父元件
       // 清空檔案選擇
       if (fileInputRef.current) fileInputRef.current.value = "";
       toast.success("AI 生成圖片成功");
-    } catch (e: any) {
-      toast.error(e.message || "AI 生成圖片失敗");
+    } catch (e) {
+      console.log('AI 生成圖片失敗', e);
+      if (e instanceof Error) {
+        toast.error(e.message || "AI 生成圖片失敗");
+      } else {
+        toast.error("AI 生成圖片失敗");
+      }
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const onCropComplete = (_: any, croppedAreaPixels: any) => {
+  const onCropComplete = (_unused: unknown, croppedAreaPixels: { x: number; y: number; width: number; height: number }) => {
     setCroppedAreaPixels(croppedAreaPixels);
   };
 
@@ -126,7 +127,6 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
       reader.onload = () => {
         const base64String = reader.result as string;
         setPreview(base64String);
-        setFile(croppedFile);
         onChange(base64String, croppedFile);
         // 清空 prompt
         setPrompt("");
@@ -136,17 +136,9 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
       setShowCrop(false);
       setCropSrc(null);
     } catch (e) {
+      console.log('圖片裁切失敗', e);
       toast.error("圖片裁切失敗");
     }
-  };
-
-  // 移除圖片
-  const handleRemove = () => {
-    setPreview(null);
-    setFile(null);
-    onChange(null, null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    onRemove?.(); // 呼叫父組件的 onRemove 回調
   };
 
   return (
