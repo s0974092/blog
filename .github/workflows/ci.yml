@@ -43,6 +43,11 @@ jobs:
     
     - name: Build application
       run: npx prisma generate && npm run build
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} 
+        NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -60,11 +65,6 @@ jobs:
     
     - name: Install dependencies
       run: npm ci --legacy-peer-deps
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} 
-        NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY }}
     
     - name: Trigger Vercel Deploy Hook
       run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" 
