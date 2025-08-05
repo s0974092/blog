@@ -17,6 +17,18 @@ export const CONTACT_INFO = {
 
 export type ContactInfo = typeof CONTACT_INFO;
 
+// 法律文件相關常數
+export const LEGAL_CONFIG = {
+  github: {
+    repository: 'https://github.com/s0974092/blog',
+    issues: 'https://github.com/s0974092/blog/issues'
+  },
+  contact: {
+    email: CONTACT_INFO.email,
+    githubIssues: 'https://github.com/s0974092/blog/issues'
+  }
+} as const;
+
 // 網站基本資訊常數
 export const SITE_CONFIG = {
   name: "YJ's Tech & Life Notes",

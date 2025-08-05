@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-// 客户端浏览器环境使用此客户端（自动处理cookies）
+// 客戶端瀏覽器環境使用此客戶端（自動處理 cookies）
 export const supabase = typeof window !== 'undefined' 
   ? createBrowserClient(supabaseUrl, supabaseAnonKey)
   : createClient(supabaseUrl, supabaseAnonKey)

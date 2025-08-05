@@ -63,13 +63,21 @@ npm run dev
 ### 環境變數設定
 
 ```env
-# Supabase 設定
+
+# Supabase設定 或 使用類似的資料庫服務平台
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# 其他設定
+# [Optional] For update DB Schema by Prisma (用於 /prisma/schema.prisma update prisma schema from supabase)
+DATABASE_URL=your_database_url
+
+# [Optional] HuggingFace 配置 (使用Prompt來生成文章圖片)
+HUGGINGFACE_API_KEY=your_huggingface_api_key
+
+# 網站基礎 URL，用於 SEO 元數據、Open Graph、Twitter 卡片、站點地圖和規範化 URL（開發環境使用 localhost；生產環境應改為實際域名）
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
 ```
 
 ## 📁 專案結構

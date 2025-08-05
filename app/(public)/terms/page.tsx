@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getFormattedCurrentDate } from '@/lib/utils';
+import { LEGAL_CONFIG } from '@/lib/constants';
 
 export default function TermsOfService() {
   return (
@@ -130,12 +131,12 @@ export default function TermsOfService() {
             <p className="text-gray-700 mt-4">
               專案地址：
               <a 
-                href="https://github.com/s0974092/blog" 
+                href={LEGAL_CONFIG.github.repository}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:text-blue-800 underline ml-2"
               >
-                https://github.com/s0974092/blog
+                {LEGAL_CONFIG.github.repository}
               </a>
             </p>
           </section>
@@ -155,21 +156,21 @@ export default function TermsOfService() {
             <ul className="list-disc pl-6 text-gray-700 space-y-2">
               <li>
                 <a 
-                  href="mailto:s0974092@gmail.com" 
+                  href={`mailto:${LEGAL_CONFIG.contact.email}`}
                   className="text-blue-600 hover:text-blue-800 underline"
                 >
-                  s0974092@gmail.com
+                  {LEGAL_CONFIG.contact.email}
                 </a>
               </li>
               <li>
                 GitHub Issues：
                 <a 
-                  href="https://github.com/s0974092/blog/issues" 
+                  href={LEGAL_CONFIG.contact.githubIssues}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-800 underline"
                 >
-                  https://github.com/s0974092/blog/issues
+                  {LEGAL_CONFIG.contact.githubIssues}
                 </a>
               </li>
             </ul>

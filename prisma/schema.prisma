@@ -24,7 +24,6 @@ model Post {
   createdBy     String?      @map("created_by") @db.Uuid
   updatedBy     String?      @map("updated_by") @db.Uuid
   published     Boolean?     @default(false)
-  comments      Comment[]
   tags          PostTag[]
   category      Category     @relation(fields: [categoryId], references: [id], onDelete: SetDefault)
   subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
@@ -91,17 +90,3 @@ model PostTag {
   @@map("post_tags")
 }
 
-model Comment {
-  id        Int      @id @default(autoincrement())
-  content   String
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-  authorId  String   @map("author_id") @db.Uuid
-  postId    String   @map("post_id") @db.Uuid
-  isTest    Boolean  @default(false) @map("is_test")
-  createdBy String?  @map("created_by") @db.Uuid
-  updatedBy String?  @map("updated_by") @db.Uuid
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@map("comments")
-}
