@@ -35,9 +35,6 @@ jobs:
     
     - name: Build application
       run: npm run build
-      env:
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
   security:
     runs-on: ubuntu-latest
@@ -77,12 +74,5 @@ jobs:
     - name: Install dependencies
       run: npm ci --legacy-peer-deps
     
-    - name: Build application
-      run: npm run build
-      env:
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-    
-    - name: Deploy to production
-      run: echo "Deployment step would go here"
-      # 這裡可以添加實際的部署步驟，例如部署到 Vercel、Netlify 等 
+    - name: Trigger Vercel Deploy Hook
+      run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" 
