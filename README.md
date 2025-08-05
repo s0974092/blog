@@ -27,12 +27,10 @@
 [![Maintenance](https://img.shields.io/badge/maintenance-active-brightgreen.svg)](https://github.com/s0974092/blog)
 
 ### 🚀 CI/CD 狀態
-[![CI/CD Pipeline](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
-[![Lint](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=lint)](https://github.com/s0974092/blog/actions/workflows/ci.yml?job=lint)
-[![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
-[![Build](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=build)](https://github.com/s0974092/blog/actions/workflows/ci.yml?job=build)
-[![Security Audit](https://github.com/s0974092/blog/actions/workflows/security.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/security.yml)
 [![Dependency Check](https://github.com/s0974092/blog/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/dependency-check.yml)
+[![Security Audit](https://github.com/s0974092/blog/actions/workflows/security.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/security.yml)
+[![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
+[![Build & Deploy](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
 
 ## 🚀 功能特色
 
