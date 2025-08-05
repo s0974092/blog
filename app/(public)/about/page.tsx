@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Globe, Github, Linkedin } from 'lucide-react';
+import { Mail, Globe, Github, Linkedin, ArrowLeft } from 'lucide-react';
 import { CONTACT_INFO } from '@/lib/constants';
 
 export default function AboutPage() {
@@ -24,11 +24,13 @@ export default function AboutPage() {
               className="rounded-md shadow-lg"
             />
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">YJ</h2>
-            <p className="text-gray-600 leading-relaxed mb-4">
-              你好！我是YJ，一名熱愛技術的開發者。在這個數位時代，我致力於探索新技術的奧秘，
-              並將這些知識與經驗分享給更多志同道合的朋友。
+          <div className="flex flex-col flex-1 gap-4">
+            <h2 className="text-2xl font-bold text-gray-900">YJ</h2>
+            <p className="text-gray-600 leading-relaxed">
+              你好！我是YJ(Jason)，一名具備產品思維且熱愛技術的開發者。
+            </p>
+            <p className="text-gray-600 leading-relaxed">
+              在AI當道的時代，我致力於與AI一起協作與打造SaaS產品。並將這些知識與經驗分享給更多志同道合的朋友。
             </p>
             <p className="text-gray-600 leading-relaxed">
               除了技術，我也關注生活的美好瞬間。這裡記錄的不只是程式碼，更是成長路上的點點滴滴。
@@ -44,23 +46,38 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
-              <span className="text-3xl">🎓</span>
+              {/* Y字母的向量圖形 */}
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="text-white">
+                <path d="M12 8L24 20L36 8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M24 20L24 40" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="24" cy="20" r="2" fill="currentColor"/>
+              </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">字母「Y」的含義</h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              左邊的線條以開口向上的「Y」形呈現，象徵開放的學習態度與包容性。
-              Y 代表你的名「Yu-Jie」首字母，也象徵「Your」→ 強調部落格是「你的筆記」概念。
+              線條以開口向上的「Y」形呈現，象徵開放的學習態度與包容性。
+              Y 代表羅馬拼音「Yu-Jie」第一個音的字首，也象徵「Your」→ 強調部落格是「你的筆記」概念。
             </p>
           </div>
           
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
-              <span className="text-3xl">✈️</span>
+              {/* J字母的向量圖形 */}
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="text-white">
+                {/* 頂部橫線 */}
+                <path d="M16 5L32 5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                {/* 右側豎線 */}
+                <path d="M32 5L32 34" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                {/* 底部彎曲部分 */}
+                <path d="M32 34C32 38 28 42 24 42C20 42 16 38 16 34" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                {/* 底部小點 */}
+                <circle cx="16" cy="34" r="1.5" fill="currentColor"/>
+              </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">字母「J」的含義</h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              右側以橘色豎劃明確呈現「J」，是 Jason 及 Yu-Jie 的縮寫，也代表 Journal（筆記）、Journey（旅程）的意涵。
-              橘色為溫暖色調，讓整體專業感中帶有「親和與個性」。
+              線條以豎劃明確呈現「J」，是 Jason 及 Yu-Jie 第二個音的字首，也代表 Journal（筆記）、Journey（旅程）的意涵。
+              橘色為溫暖色調，讓整體專業感中帶有「親和與個性化」。
             </p>
           </div>
         </div>
@@ -68,43 +85,78 @@ export default function AboutPage() {
         {/* 書本輪廓說明 */}
         <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-orange-50 rounded-xl">
           <div className="flex items-center justify-center mb-4">
-            <span className="text-4xl">📚</span>
+            {/* 書本的圖片 */}
+            <Image 
+              src="/open-book.png" 
+              alt="打開的書本" 
+              width={96} 
+              height={96}
+              className="rounded-full"
+            />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">書本輪廓設計</h3>
           <p className="text-gray-600 text-sm leading-relaxed text-center">
             外框像一本展開的書，代表知識、思考與記錄，符合「Code. Think. Life.」的理念。
+          </p>
+          <p className="text-gray-600 text-sm leading-relaxed text-center">
             書本的對稱設計也象徵系統架構思維的平衡與邏輯性。
           </p>
         </div>
       </div>
 
-      {/* 技術專長 */}
+      {/* 專長 */}
       <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-8 mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">技術專長</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">專長</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
-            <div className="text-3xl mb-3">💻</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">前端開發</h3>
-            <p className="text-gray-600 text-sm">
-              React, Next.js, TypeScript, Tailwind CSS
-            </p>
+            <div className="text-8xl mb-3">💻</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Full Stack Developer</h3>
+            <div className="flex flex-wrap justify-center gap-2">
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Angular</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">React</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Vue</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Next.js</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">TypeScript</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Tailwind CSS</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Node.js</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Express.js</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Java</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">Spring Boot</span>
+              <span className="px-3 py-1 bg-blue-200 text-blue-800 text-xs font-medium rounded-full">RESTful API</span>
+            </div>
           </div>
           
           <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
-            <div className="text-3xl mb-3">⚙️</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">後端開發</h3>
-            <p className="text-gray-600 text-sm">
-              Node.js, Python, 資料庫設計, API開發
-            </p>
+            <div className="text-8xl mb-3">🏗️</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">System Design</h3>
+            <div className="flex flex-wrap justify-center gap-2">
+              <span className="px-3 py-1 bg-green-200 text-green-800 text-xs font-medium rounded-full">0 to 1</span>
+              <span className="px-3 py-1 bg-green-200 text-green-800 text-xs font-medium rounded-full">需求分析</span>
+              <span className="px-3 py-1 bg-green-200 text-green-800 text-xs font-medium rounded-full">使用者經驗設計</span>
+              <span className="px-3 py-1 bg-green-200 text-green-800 text-xs font-medium rounded-full">微服務架構設計</span>
+              <span className="px-3 py-1 bg-green-200 text-green-800 text-xs font-medium rounded-full">資料庫設計</span>
+              <span className="px-3 py-1 bg-green-200 text-green-800 text-xs font-medium rounded-full">API 設計</span>
+              <span className="px-3 py-1 bg-green-200 text-green-800 text-xs font-medium rounded-full">SEO</span>
+            </div>
           </div>
           
           <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
-            <div className="text-3xl mb-3">🚀</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">DevOps</h3>
-            <p className="text-gray-600 text-sm">
-              雲端部署, CI/CD, 容器化技術
-            </p>
+            <div className="text-8xl mb-3">🤝</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Soft Skill</h3>
+            <div className="flex flex-wrap justify-center gap-2">
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">AI協作</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">ChatGPT</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">Cursor</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">Windsurf</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">Claude Code</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">Ownership</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">同理心</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">產品思維</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">策略思維</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">注重細節</span>
+              <span className="px-3 py-1 bg-purple-200 text-purple-800 text-xs font-medium rounded-full">團隊合作</span>
+            </div>
           </div>
         </div>
       </div>
@@ -180,8 +232,8 @@ export default function AboutPage() {
           href="/blog" 
           className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          <span>←</span>
-          返回部落格
+          <ArrowLeft size={16} />
+          返回首頁
         </Link>
       </div>
     </div>

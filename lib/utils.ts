@@ -8,6 +8,32 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * 獲取當前年份
+ * @returns 當前年份數字
+ */
+export function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+/**
+ * 獲取當前月份的中文名稱
+ * @returns 當前月份的中文名稱（如：一月、二月等）
+ */
+export function getCurrentMonth(): string {
+  return new Date().toLocaleDateString('zh-TW', { month: 'long' });
+}
+
+/**
+ * 獲取格式化的當前日期字串
+ * @returns 格式化的日期字串（如：2025年一月）
+ */
+export function getFormattedCurrentDate(): string {
+  const year = getCurrentYear();
+  const month = getCurrentMonth();
+  return `${year}年${month}`;
+}
+
+/**
  * 將中文文字轉換為拼音，並格式化為 URL 友善的格式
  * @param text 要轉換的中文文字
  * @returns 格式化後的拼音字串

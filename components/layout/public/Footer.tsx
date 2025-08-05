@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Globe, Github, Linkedin } from 'lucide-react';
 import { CONTACT_INFO } from '@/lib/constants';
+import { getCurrentYear } from '@/lib/utils';
 
 export default function Footer() {
   return (
@@ -11,7 +12,7 @@ export default function Footer() {
           {/* Logo 和品牌資訊 */}
           <div className="flex flex-col items-start">
             <Link href="/blog" className="flex items-center gap-2 mb-4">
-              <Image src="/yj-brand-logo.png" alt="YJ's Tech & Life Notes" width={40} height={40} />
+              <Image src="/yj-brand-logo.png" alt="YJ's Tech & Life Notes" width={100} height={100} />
               <span className="text-xl font-bold font-[firacode] text-gray-900">YJ's Tech & Life Notes</span>
             </Link>
             <p className="text-gray-600 text-sm leading-relaxed">
@@ -87,7 +88,7 @@ export default function Footer() {
         <div className="border-t border-gray-200 mt-8 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-500">
-              © 2025 YJ's Tech & Life Notes. All rights reserved.
+              © {getCurrentYear()} YJ's Tech & Life Notes. All rights reserved.
             </p>
             <div className="flex gap-4 mt-4 md:mt-0">
               <Link href="/privacy" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">
