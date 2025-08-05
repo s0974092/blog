@@ -1,5 +1,7 @@
 # YJ's Tech & Life Notes - 部落格網站
 
+一個使用 Next.js 15、TypeScript、Tailwind CSS 和 Supabase 建立的現代化部落格網站。
+
 ## 📊 專案狀態
 
 ### 🏷️ 版本與技術
@@ -25,12 +27,11 @@
 [![Maintenance](https://img.shields.io/badge/maintenance-active-brightgreen.svg)](https://github.com/s0974092/blog)
 
 ### 🚀 CI/CD 狀態
-[![CI/CD](https://github.com/s0974092/blog/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/s0974092/blog/actions)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
-[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
-[![Security](https://img.shields.io/badge/security-audit-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
-
-一個使用 Next.js 15、TypeScript、Tailwind CSS 和 Supabase 建立的現代化部落格網站。
+[![CI/CD Pipeline](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
+[![Lint](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=lint)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
+[![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
+[![Build](https://github.com/s0974092/blog/actions/workflows/build.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/build.yml)
+[![Security Audit](https://github.com/s0974092/blog/actions/workflows/security.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/security.yml)
 
 ## 🚀 功能特色
 
@@ -296,9 +297,10 @@ blog/
 這些徽章會根據實際狀態更新：
 
 ```markdown
-[![CI/CD](https://github.com/s0974092/blog/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/s0974092/blog/actions)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
-[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/s0974092/blog/actions)
+[![CI/CD Pipeline](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
+[![Lint](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=lint)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
+[![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
+[![Build](https://github.com/s0974092/blog/actions/workflows/build.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/build.yml)
 ```
 
 ### 其他常用徽章

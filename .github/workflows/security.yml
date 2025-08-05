@@ -1,0 +1,40 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+
+      - name: Run npm audit fix (dry run)
+        run: npm audit fix --dry-run
+
+      - name: Check for known vulnerabilities
+        run: |
+          echo "Checking for security vulnerabilities..."
+          npm audit --audit-level=high || {
+            echo "⚠️  High severity vulnerabilities found!"
+            echo "Please run 'npm audit fix' to fix automatically fixable issues"
+            echo "For manual fixes, run 'npm audit' to see details"
+            exit 1
+          } 
