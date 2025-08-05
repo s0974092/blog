@@ -31,9 +31,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
     // 提取文章內容的前200個字元作為描述
     const contentText = extractTextFromContent(post.content);
-    const description = contentText.length > 200 
-      ? contentText.substring(0, 200) + '...' 
-      : contentText;
+    // 過濾掉 UI 相關文字
+    const cleanDescription = contentText
+      .replace(/返回首頁/g, '')
+      .trim();
+    
+    const description = cleanDescription.length > 200 
+      ? cleanDescription.substring(0, 200) + '...' 
+      : cleanDescription;
 
     // 生成關鍵字
     const keywords = [
@@ -75,6 +80,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       },
       alternates: {
         canonical: `${SITE_CONFIG.url}/blog/${post.slug}`,
+      },
+      other: {
+        'og:description': description,
+        'twitter:description': description,
       },
     };
   } catch (error) {
