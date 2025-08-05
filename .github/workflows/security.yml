@@ -26,15 +26,26 @@ jobs:
       - name: Run npm audit
         run: npm audit --audit-level=high
 
-      - name: Run npm audit fix (dry run)
-        run: npm audit fix --dry-run
-
       - name: Check for known vulnerabilities
         run: |
-          echo "Checking for security vulnerabilities..."
+          echo "🔍 Checking for security vulnerabilities..."
+          echo "📊 Running npm audit with high severity level..."
+          
+          # Run audit and capture the exit code
           npm audit --audit-level=high || {
             echo "⚠️  High severity vulnerabilities found!"
-            echo "Please run 'npm audit fix' to fix automatically fixable issues"
-            echo "For manual fixes, run 'npm audit' to see details"
+            echo "📋 Vulnerability details:"
+            npm audit --audit-level=high --json || true
+            echo ""
+            echo "💡 To fix automatically fixable issues, run:"
+            echo "   npm audit fix"
+            echo ""
+            echo "💡 For manual fixes, run:"
+            echo "   npm audit"
+            echo ""
+            echo "🚨 Security check failed - please review and fix vulnerabilities"
             exit 1
-          } 
+          }
+          
+          echo "✅ No high severity vulnerabilities found!"
+          echo "🎉 Security audit passed successfully!" 

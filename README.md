@@ -30,8 +30,9 @@
 [![CI/CD Pipeline](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
 [![Lint](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=lint)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
 [![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
-[![Build](https://github.com/s0974092/blog/actions/workflows/build.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/build.yml)
+[![Build](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=build)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
 [![Security Audit](https://github.com/s0974092/blog/actions/workflows/security.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/security.yml)
+[![Dependency Check](https://github.com/s0974092/blog/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/dependency-check.yml)
 
 ## 🚀 功能特色
 
@@ -300,7 +301,7 @@ blog/
 [![CI/CD Pipeline](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
 [![Lint](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=lint)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
 [![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
-[![Build](https://github.com/s0974092/blog/actions/workflows/build.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/build.yml)
+[![Build](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=build)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
 ```
 
 ### 其他常用徽章

@@ -28,7 +28,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     const result = await res.json();
-    const posts = result.data || [];
+    // 確保 posts 是數組
+    const posts = Array.isArray(result.data) ? result.data : [];
 
     const blogUrls = posts.map((post: { slug: string; updated_at?: string; created_at: string }) => ({
       url: `${baseUrl}/blog/${post.slug}`,

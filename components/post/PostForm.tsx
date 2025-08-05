@@ -91,6 +91,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
     const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
     const [oldCoverImageUrl, setOldCoverImageUrl] = useState<string | undefined>(undefined);
+    const [isLoadingSubCategories, setIsLoadingSubCategories] = useState(false);
 
     const { 
       newCategoryId, 
@@ -148,8 +149,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             form.setValue('slug', post.slug);
             form.setValue('slugStatus', post.slugStatus);
             form.setValue('categoryId', post.categoryId);
-            setNewSubCategoryId(post.subcategoryId);
-            handleCategoryChange(post.categoryId);
             form.setValue('tagIds', post.tags.map((tag: Tag) => tag.id));
             form.setValue('isPublished', post.published);
             form.setValue('coverImageUrl', post.coverImageUrl || "");
@@ -158,6 +157,11 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             // 設置編輯器內容
             if (post?.content) {
               setEditorValue(post.content);
+            }
+
+            // 在編輯模式下，先載入子主題，然後設置子主題值
+            if (post.categoryId) {
+              await handleCategoryChange(post.categoryId, true, post.subcategoryId);
             }
           }
 
@@ -170,6 +174,40 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       fetchInitialData();
     }, []);
   
+    // 當主題改變時載入對應的子主題
+    const handleCategoryChange = useCallback(async (categoryId: number, isEditMode = false, initialSubCategoryId?: number) => {
+      if (!categoryId) {
+        setSubCategories([])
+        form.setValue('subCategoryId', undefined)
+        setIsLoadingSubCategories(false)
+        return
+      }
+  
+      setIsLoadingSubCategories(true)
+      try {
+        const response = await fetch(`/api/categories/${categoryId}/sub-categories?all=true`)
+        if (!response.ok) throw new Error('載入子主題失敗')
+        const data = await response.json()
+        console.log('子主題數據:', data.data)
+        setSubCategories(data.data || [])  // 直接使用 data.data，因為 API 直接返回數組
+        
+        // 只有在非編輯模式或沒有初始子主題ID時才重置子主題選擇
+        if (!isEditMode || !initialSubCategoryId) {
+          form.setValue('subCategoryId', undefined)
+        } else {
+          // 在編輯模式下，設置初始的子主題值
+          form.setValue('subCategoryId', initialSubCategoryId)
+        }
+      } catch (error) {
+        console.error('載入子主題失敗:', error)
+        toast.error('載入子主題失敗')
+        setSubCategories([])
+        form.setValue('subCategoryId', undefined)
+      } finally {
+        setIsLoadingSubCategories(false)
+      }
+    }, [form])
+
     // 處理新增的主題
     useEffect(() => {
       if (newCategoryId) {
@@ -202,10 +240,10 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       if (newlyAddedCategoryId && categories.some(cat => cat.id === newlyAddedCategoryId)) {
         form.setValue('categoryId', newlyAddedCategoryId)
         form.setValue('subCategoryId', undefined)
-        handleCategoryChange(newlyAddedCategoryId)
+        handleCategoryChange(newlyAddedCategoryId, false)
         setNewlyAddedCategoryId(null)
       }
-    }, [categories, subCategories, newlyAddedCategoryId, newlyAddedSubCategoryId, form])
+    }, [categories, subCategories, newlyAddedCategoryId, newlyAddedSubCategoryId, form, handleCategoryChange])
   
     // 處理新增的子主題
      
@@ -313,27 +351,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       };
     }, [isEditorFullscreen]);
 
-    // 當主題改變時載入對應的子主題
-    const handleCategoryChange = useCallback(async (categoryId: number) => {
-      if (!categoryId) {
-        setSubCategories([])
-        form.setValue('subCategoryId', undefined)
-        return
-      }
-  
-      try {
-        const response = await fetch(`/api/categories/${categoryId}/sub-categories?all=true`)
-        if (!response.ok) throw new Error('載入子主題失敗')
-        const data = await response.json()
-        console.log('子主題數據:', data.data)
-        setSubCategories(data.data || [])  // 直接使用 data.data，因為 API 直接返回數組
-      } catch (error) {
-        console.error('載入子主題失敗:', error)
-        toast.error('載入子主題失敗')
-        setSubCategories([])
-      }
-    }, [form])
-  
     // 根據標題自動生成 Slug
     const handleTitleChange = (title: string) => {
       form.setValue('title', title);
@@ -753,11 +770,13 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                               } else {
                                 const selectedCategory = categories.find(cat => cat.id.toString() === value);
                                 form.setValue('categoryId', selectedCategory?.id);
-                                handleCategoryChange(Number(value));
+                                // 立即清空子主題選擇
+                                form.setValue('subCategoryId', undefined);
+                                handleCategoryChange(Number(value), false);
                               }
                               form.trigger("categoryId"); // 手動觸發驗證
                             }}
-                            value={field.value?.toString() || ""}
+                            value={field.value ? field.value.toString() : ""}
                           >
                             <FormControl>
                               <SelectTrigger className="w-full" ref={field.ref}>
@@ -809,22 +828,31 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                               const selectedSubCategory = subCategories.find(subCat => subCat.id.toString() === value)
                               form.setValue('subCategoryId', selectedSubCategory?.id || undefined)
                             }}
-                            value={field.value?.toString() || ""}
-                            disabled={!form.getValues('categoryId')}
+                            value={field.value ? field.value.toString() : ""}
+                            disabled={!form.watch('categoryId') || isLoadingSubCategories}
                           >
                             <FormControl>
-                              <SelectTrigger className="w-full" disabled={subCategories?.length === 0}>
+                              <SelectTrigger className="w-full" disabled={subCategories?.length === 0 || isLoadingSubCategories}>
                                 <SelectValue
                                   placeholder={
-                                    !form.getValues('categoryId') 
-                                      ? "請先選擇主題" 
-                                      : (subCategories?.length === 0 ? "無可用的子主題" : "請選擇子主題")
+                                    isLoadingSubCategories 
+                                      ? "載入中..." 
+                                      : !form.watch('categoryId') 
+                                        ? "請先選擇主題" 
+                                        : (subCategories?.length === 0 ? "無可用的子主題" : "請選擇子主題")
                                   }
                                 />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-[300px] overflow-y-auto">
-                              {subCategories?.length === 0 ? (
+                              {isLoadingSubCategories ? (
+                                <SelectItem value="loading" disabled>
+                                  <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    載入中...
+                                  </div>
+                                </SelectItem>
+                              ) : subCategories?.length === 0 ? (
                                 <SelectItem value="no-data" disabled>
                                   無可用的子主題
                                 </SelectItem>
@@ -847,7 +875,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                             variant="outline"
                             size="icon"
                             onClick={handleAddSubCategory}
-                            disabled={!form.getValues('categoryId')}
+                            disabled={!form.watch('categoryId') || isLoadingSubCategories}
                           >
                             <PlusIcon className="h-4 w-4" />
                           </Button>
