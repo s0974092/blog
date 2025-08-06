@@ -114,6 +114,7 @@ export function BlogDetail({ post }: BlogDetailProps) {
                 width={640}
                 height={360}
                 className="w-full aspect-[16/9] object-cover rounded-lg mb-6 shadow-md"
+                priority
               />
             )}
             <h1 className="text-3xl font-bold mb-2 text-gray-900">{post?.title}</h1>

@@ -22,6 +22,7 @@ export default function AboutPage() {
               width={240} 
               height={240}
               className="rounded-md shadow-lg"
+              priority
             />
           </div>
           <div className="flex flex-col flex-1 gap-4">
@@ -92,6 +93,7 @@ export default function AboutPage() {
               width={96} 
               height={96}
               className="rounded-full"
+              priority
             />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">書本輪廓設計</h3>

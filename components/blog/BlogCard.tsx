@@ -28,6 +28,7 @@ export default function BlogCard({ post, onCategoryClick, onSubCategoryClick, on
             width={600}
             height={338}
             className="w-full aspect-[16/9] object-cover"
+            priority
           />
         </Link>
       )}

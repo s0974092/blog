@@ -176,6 +176,7 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
               width={1200}
               height={630}
               className="w-full aspect-[16/9] object-cover rounded border"
+              priority
             />
           ) : (
             <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center rounded text-muted-foreground border">
@@ -226,6 +227,7 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
                 width={1200}
                 height={630}
                 className="w-full aspect-[16/9] object-cover rounded border"
+                priority
               />
             ) : (
               <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center rounded text-muted-foreground border">
