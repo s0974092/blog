@@ -31,6 +31,7 @@
 [![Security Audit](https://github.com/s0974092/blog/actions/workflows/security.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/security.yml)
 [![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
 [![Build & Deploy](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
+[![Deploy to Vercel](https://img.shields.io/badge/deploy%20to-Vercel-black.svg)]
 
 ## 🚀 功能特色
 
@@ -278,91 +279,6 @@ blog/
 ---
 
 ⭐ 如果這個專案對您有幫助，請給我們一個 Star！
-
-## 📋 徽章使用指南
-
-### 靜態徽章
-這些徽章顯示固定的資訊，如版本、技術棧等：
-
-```markdown
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/s0974092/blog)
-[![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black.svg)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.0.0-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-```
-
-### 動態徽章
-這些徽章會根據實際狀態更新：
-
-```markdown
-[![CI/CD Pipeline](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
-[![Lint](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=lint)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
-[![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
-[![Build](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg?job=build)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
-```
-
-### 其他常用徽章
-
-#### 程式碼品質
-```markdown
-[![Code Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)](https://github.com/s0974092/blog)
-[![Code Quality](https://img.shields.io/badge/code%20quality-A%2B-brightgreen.svg)](https://github.com/s0974092/blog)
-[![Maintainability](https://img.shields.io/badge/maintainability-A-brightgreen.svg)](https://github.com/s0974092/blog)
-```
-
-#### 依賴狀態
-```markdown
-[![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)](https://github.com/s0974092/blog)
-[![Dev Dependencies](https://img.shields.io/badge/dev%20dependencies-up%20to%20date-brightgreen.svg)](https://github.com/s0974092/blog)
-[![npm](https://img.shields.io/badge/npm-latest-blue.svg)](https://www.npmjs.com/)
-```
-
-#### 社群徽章
-```markdown
-[![GitHub stars](https://img.shields.io/github/stars/s0974092/blog.svg)](https://github.com/s0974092/blog)
-[![GitHub forks](https://img.shields.io/github/forks/s0974092/blog.svg)](https://github.com/s0974092/blog)
-[![GitHub issues](https://img.shields.io/github/issues/s0974092/blog.svg)](https://github.com/s0974092/blog)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/s0974092/blog.svg)](https://github.com/s0974092/blog)
-```
-
-#### 部署狀態
-```markdown
-[![Deploy to Vercel](https://img.shields.io/badge/deploy%20to-vercel-black.svg)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fs0974092%2Fblog)
-[![Deploy to Netlify](https://img.shields.io/badge/deploy%20to-netlify-blue.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/s0974092/blog)
-```
-
-### 如何添加新徽章
-
-1. **訪問 [Shields.io](https://shields.io/)** - 徽章生成器
-2. **選擇徽章類型** - 靜態、動態、自定義等
-3. **配置徽章參數** - 顏色、文字、連結等
-4. **複製 Markdown 代碼** - 貼到 README.md 中
-
-### 徽章最佳實踐
-
-- ✅ 使用相關的顏色（綠色表示成功，紅色表示錯誤等）
-- ✅ 提供有用的連結（點擊徽章可跳轉到相關頁面）
-- ✅ 保持徽章數量適中（建議不超過 10-15 個）
-- ✅ 定期更新版本號和狀態
-- ✅ 使用動態徽章顯示真實狀態
-
-### 自定義徽章顏色
-
-```markdown
-# 常用顏色代碼
-brightgreen  # 成功/通過
-green        # 一般成功
-yellow       # 警告/測試
-orange       # 構建中
-red          # 錯誤/失敗
-blue         # 資訊/版本
-lightgrey    # 無效/未知
-```
-
----
-
-**注意**: 動態徽章需要設置相應的 CI/CD 流程才能正常工作。請確保您的 GitHub Actions 工作流程已正確配置。
 
 ## 🛠️ 本機開發檢查指南
 
