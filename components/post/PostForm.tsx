@@ -136,7 +136,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           if (!response.ok) throw new Error('獲取初始數據失敗');
           const data = await response.json();
           
-          setCategories(data.data.categories);
+          setCategories([{ id: -1, name: '請選擇主題' }, ...data.data.categories]);
           setTags(data.data.tags);
 
           if (mode === 'edit' && postId) {
@@ -188,7 +188,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         const response = await fetch(`/api/categories/${categoryId}/sub-categories?all=true`)
         if (!response.ok) throw new Error('載入子主題失敗')
         const data = await response.json()
-        console.log('子主題數據:', data.data)
+        // console.log('子主題數據:', data.data)
         setSubCategories(data.data || [])  // 直接使用 data.data，因為 API 直接返回數組
         
         // 只有在非編輯模式或沒有初始子主題ID時才重置子主題選擇
@@ -763,7 +763,8 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         <div className="flex gap-2 items-center">
                           <Select
                             onValueChange={(value) => {
-                              if (value === 'reset') {
+                              // 上面是設定-1，用來判別是否清空選擇
+                              if (!value) {
                                 form.setValue('categoryId', undefined);
                                 form.setValue('subCategoryId', undefined);
                                 setSubCategories([]);
@@ -784,11 +785,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-[300px] overflow-y-auto">
-                              {categories.length > 0 && (
-                                <SelectItem key={0} value="reset">
-                                  請選擇主題
-                                </SelectItem>
-                              )}
                               {categories.map((category) => (
                                 <SelectItem key={category.id} value={category.id.toString()}>
                                   {category.name}

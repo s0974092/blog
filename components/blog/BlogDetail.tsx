@@ -98,7 +98,7 @@ export function BlogDetail({ post }: BlogDetailProps) {
       {/* 頂部閱讀進度條（可選） */}
       {showTopProgressBar && <ReadingProgressBar variant="top" />}
       
-      <div className="relative mx-auto py-8 px-4 max-lg:px-10">
+      <div className="relative mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* 主內容區塊，右側預留 TOC 空間 */}
         <div className={cn("flex-1 min-w-0", hasToc ? "lg:pr-[288px]" : "")}>
           <Link href="/blog" className="flex items-center gap-2 text-blue-600 mb-4 hover:text-blue-700 transition-colors">
