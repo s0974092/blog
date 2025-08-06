@@ -31,7 +31,7 @@
 [![Security Audit](https://github.com/s0974092/blog/actions/workflows/security.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/security.yml)
 [![Tests](https://github.com/s0974092/blog/actions/workflows/tests.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/tests.yml)
 [![Build & Deploy](https://github.com/s0974092/blog/actions/workflows/ci.yml/badge.svg)](https://github.com/s0974092/blog/actions/workflows/ci.yml)
-[![Deploy to Vercel](https://img.shields.io/badge/deploy%20to-Vercel-black.svg)]
+![Deploy to Vercel](https://img.shields.io/badge/deploy%20to-Vercel-black.svg)
 
 ## 🚀 功能特色
 
