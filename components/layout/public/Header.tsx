@@ -16,7 +16,7 @@ export default function Header({ onHeightChange, onVisibilityChange, enableHideO
   useLayoutEffect(() => {
     if (headerRef.current && onHeightChange) {
       const resizeObserver = new ResizeObserver(entries => {
-        for (let entry of entries) {
+        for (const entry of entries) {
           onHeightChange(entry.contentRect.height);
         }
       });
