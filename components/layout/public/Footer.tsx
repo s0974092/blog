@@ -12,7 +12,7 @@ export default function Footer() {
           {/* Logo 和品牌資訊 */}
           <div className="flex flex-col items-start min-h-[150px]">
             <Link href="/blog" className="flex items-center gap-2 mb-4">
-              <Image src="/yj-brand-logo.png" alt={SITE_CONFIG.name} width={100} height={100} priority />
+              <Image src="/yj-brand-logo.png" alt={SITE_CONFIG.name+'_Footer'} width={100} height={100} priority />
               <span className="text-xl font-bold font-[firacode] text-gray-900">{SITE_CONFIG.name}</span>
             </Link>
             <p className="text-gray-600 text-sm leading-relaxed">
