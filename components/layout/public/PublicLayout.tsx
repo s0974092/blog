@@ -1,3 +1,5 @@
+'use client'
+
 import { ReactNode, useState, createContext, useContext } from 'react';
 import Header from './Header';
 import Footer from './Footer';
