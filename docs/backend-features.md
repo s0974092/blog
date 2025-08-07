@@ -268,12 +268,10 @@ model Post {
   updatedAt     DateTime     @default(now())
   categoryId    Int          @default(1)
   subcategoryId Int?
-  isTest        Boolean      @default(false)
   createdBy     String?
   updatedBy     String?
   published     Boolean?     @default(false)
   coverImageUrl String?      @map("cover_image_url")
-  
   comments      Comment[]
   tags          PostTag[]
   category      Category     @relation(fields: [categoryId], references: [id])
@@ -289,10 +287,8 @@ model Category {
   isDefault     Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @default(now())
-  isTest        Boolean       @default(false)
   createdBy     String?
   updatedBy     String?
-  
   posts         Post[]
   subcategories Subcategory[]
 }
@@ -305,10 +301,8 @@ model Tag {
   name      String    @unique
   createdAt DateTime  @default(now())
   updatedAt DateTime  @default(now())
-  isTest    Boolean   @default(false)
   createdBy String?
   updatedBy String?
-  
   posts     PostTag[]
 }
 ```

@@ -20,7 +20,6 @@ model Post {
   updatedAt     DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
   categoryId    Int          @default(1) @map("category_id")
   subcategoryId Int?         @map("subcategory_id")
-  isTest        Boolean      @default(false) @map("is_test")
   createdBy     String?      @map("created_by") @db.Uuid
   updatedBy     String?      @map("updated_by") @db.Uuid
   published     Boolean?     @default(false)
@@ -38,7 +37,6 @@ model Category {
   isDefault     Boolean       @default(false) @map("is_default")
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
-  isTest        Boolean       @default(false) @map("is_test")
   createdBy     String?       @map("created_by") @db.Uuid
   updatedBy     String?       @map("updated_by") @db.Uuid
   posts         Post[]
@@ -53,7 +51,6 @@ model Subcategory {
   categoryId Int      @map("category_id")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-  isTest     Boolean  @default(false) @map("is_test")
   createdBy  String?  @map("created_by") @db.Uuid
   updatedBy  String?  @map("updated_by") @db.Uuid
   posts      Post[]
@@ -67,7 +64,6 @@ model Tag {
   name      String    @unique
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
-  isTest    Boolean   @default(false) @map("is_test")
   createdBy String?   @map("created_by") @db.Uuid
   updatedBy String?   @map("updated_by") @db.Uuid
   posts     PostTag[]
@@ -80,7 +76,6 @@ model PostTag {
   tagId     Int      @map("tag_id")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-  isTest    Boolean  @default(false) @map("is_test")
   createdBy String?  @map("created_by") @db.Uuid
   updatedBy String?  @map("updated_by") @db.Uuid
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
