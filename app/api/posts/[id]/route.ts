@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(
     request: Request,
@@ -135,6 +136,7 @@ export async function PUT(
 
       // if tags is not empty, create new postTag
       if (!tagIds || tagIds.length === 0) {
+        revalidatePath(`/blog/${updatedPost.slug}`); // 重新驗證文章詳情頁面
         return NextResponse.json({ success: true, data: updatedPost });
       }
       
@@ -146,6 +148,7 @@ export async function PUT(
         })),
       })
 
+      revalidatePath(`/blog/${updatedPost.slug}`); // 重新驗證文章詳情頁面
       return NextResponse.json({ success: true, data: updatedPost });
     } catch (error) {
       console.error('更新文章失敗:', error);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { revalidatePath } from 'next/cache';
 
 // 文章驗證schema
 const postSchema = z.object({
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    revalidatePath('/blog'); // 重新驗證部落格列表頁面
     return NextResponse.json({
       success: true,
       data: post
