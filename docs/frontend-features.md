@@ -162,17 +162,7 @@ import { cn } from '@/lib/utils'
 const className = cn('base-class', condition && 'conditional-class')
 ```
 
-### 2. generatePinyin()
-- **功能**: 將中文轉換為拼音
-- **使用方式**:
-```tsx
-import { generatePinyin } from '@/lib/utils'
-
-const slug = generatePinyin('中文標題')
-// 輸出: 'zhong-wen-biao-ti'
-```
-
-### 3. generateFileName()
+### 2. generateFileName()
 - **功能**: 生成唯一檔案名稱
 - **使用方式**:
 ```tsx

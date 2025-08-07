@@ -100,8 +100,7 @@ export async function DELETE(
 ) {
   try {
     const user = await getServerUser()
-    
-    // 需要登錄才能刪除
+
     if (!user) {
       return NextResponse.json(
         { success: false, error: '無權限刪除主題' },
@@ -109,8 +108,8 @@ export async function DELETE(
       )
     }
 
-    const params = await context.params;
-    const id = Number(params.id);
+    const params = await context.params
+    const id = Number(params.id)
 
     if (isNaN(id)) {
       return NextResponse.json(
@@ -119,37 +118,48 @@ export async function DELETE(
       )
     }
 
-    // 檢查是否有關聯的子主題
-    const subCategories = await prisma.subcategory.findMany({
+    // 查找默認主題
+    const defaultCategory = await prisma.category.findFirst({
       where: {
-        categoryId: id
+        isDefault: true
       }
     })
 
-    // 如果有關聯的子主題，一併刪除
-    if (subCategories.length > 0) {
-      await prisma.$transaction([
-        // 刪除所有關聯的子主題
-        prisma.subcategory.deleteMany({
-          where: {
-            categoryId: id
-          }
-        }),
-        // 刪除主題
-        prisma.category.delete({
-          where: {
-            id
-          }
-        })
-      ])
-    } else {
-      // 如果沒有關聯的子主題，直接刪除主題
-      await prisma.category.delete({
+    if (!defaultCategory) {
+      return NextResponse.json(
+        { success: false, error: '未找到默認主題' },
+        { status: 500 }
+      )
+    }
+
+    // 禁止刪除默認主題
+    if (id === defaultCategory.id) {
+      return NextResponse.json(
+        { success: false, error: '不能刪除默認主題' },
+        { status: 400 }
+      )
+    }
+
+    // 事務：更新文章、刪除子主題和主題
+    await prisma.$transaction(async (tx) => {
+      // 1. 將相關聯的文章更新到默認主題
+      await tx.post.updateMany({
+        where: {
+          categoryId: id
+        },
+        data: {
+          categoryId: defaultCategory.id
+        }
+      })
+
+      // 2. 刪除所有關聯的子主題 (onDelete: Cascade 會自動處理)
+      // 3. 刪除主題
+      await tx.category.delete({
         where: {
           id
         }
       })
-    }
+    })
 
     return NextResponse.json({
       success: true,

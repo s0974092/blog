@@ -309,7 +309,7 @@ export default function CategoriesPage() {
               確定要刪除主題「{selectedCategory?.name}」嗎？
               {postCounts[selectedCategory?.id || 0] > 0 && (
                 <p className="text-red-500 mt-2">
-                  注意：此主題下有 {postCounts[selectedCategory?.id || 0]} 篇文章，刪除主題將會移除這些文章的主題關聯。
+                  注意：此主題下的 {postCounts[selectedCategory?.id || 0]} 篇文章將會被歸類到「未分類」。
                 </p>
               )}
               {subCategories.length > 0 && (

@@ -22,7 +22,7 @@ export default function Footer() {
           
           {/* 快速連結 */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">快速連結</h3>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">快速連結</h2>
             <ul className="space-y-2">
               <li>
                 <Link href="/blog" className="text-gray-600 hover:text-blue-600 transition-colors">
@@ -44,7 +44,7 @@ export default function Footer() {
           
           {/* 聯絡資訊 */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">聯絡資訊</h3>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">聯絡資訊</h2>
             <div className="space-y-3">
               <a 
                 href={`mailto:${CONTACT_INFO.email}`}

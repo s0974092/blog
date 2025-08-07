@@ -34,7 +34,7 @@ model Post {
 
 model Category {
   id            Int           @id @default(autoincrement())
-  name          String
+  name          String        @unique
   isDefault     Boolean       @default(false) @map("is_default")
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)

@@ -60,7 +60,7 @@ export default function BlogSearchBar({ search, categoryId, subCategoryId, sort,
         value={categoryId ? String(categoryId) : 'all'}
         onValueChange={val => onChange({ search, categoryId: val === 'all' ? '' : Number(val), subCategoryId: '', sort })}
       >
-        <SelectTrigger className="w-40">
+        <SelectTrigger className="w-40" aria-label="選擇主題">
           <SelectValue placeholder="全部主題" />
         </SelectTrigger>
         <SelectContent>
@@ -75,7 +75,7 @@ export default function BlogSearchBar({ search, categoryId, subCategoryId, sort,
         onValueChange={val => onChange({ search, categoryId, subCategoryId: val === 'all' ? '' : Number(val), sort })}
         disabled={!categoryId}
       >
-        <SelectTrigger className="w-40">
+        <SelectTrigger className="w-40" aria-label="選擇子主題">
           <SelectValue placeholder="全部子主題" />
         </SelectTrigger>
         <SelectContent>
@@ -89,7 +89,7 @@ export default function BlogSearchBar({ search, categoryId, subCategoryId, sort,
         value={sort}
         onValueChange={val => onChange({ search, categoryId, subCategoryId, sort: val })}
       >
-        <SelectTrigger className="w-32">
+        <SelectTrigger className="w-32" aria-label="選擇排序方式">
           <SelectValue placeholder="排序" />
         </SelectTrigger>
         <SelectContent>

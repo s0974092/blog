@@ -90,14 +90,14 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     // 新增一個狀態變數來追蹤是否資料已載入完成
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [categories, setCategories] = useState<Category[]>([])
+    const [allCategories, setAllCategories] = useState<Category[]>([]) // 新增：儲存所有主題
+    const [filteredCategories, setFilteredCategories] = useState<Category[]>([]) // 新增：儲存過濾後的主題
     const [subCategories, setSubCategories] = useState<SubCategory[]>([])
     const [tags, setTags] = useState<Tag[]>([])
-    const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null)
-    const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null)
     const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
     const [oldCoverImageUrl, setOldCoverImageUrl] = useState<string | undefined>(undefined);
     const [isLoadingSubCategories, setIsLoadingSubCategories] = useState(false);
+    const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null);
 
     const { 
       newCategoryId, 
@@ -142,7 +142,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           if (!response.ok) throw new Error('獲取初始數據失敗');
           const data = await response.json();
           
-          setCategories([{ id: -1, name: '請選擇主題' }, ...data.data.categories]);
+          setAllCategories(data.data.categories); // 儲存所有主題
           setTags(data.data.tags);
 
           if (mode === 'edit' && postId) {
@@ -179,6 +179,22 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
 
       fetchInitialData();
     }, []);
+
+    // 當 allCategories 或 mode 變化時，更新過濾後的主題列表
+    useEffect(() => {
+      let categoriesToFilter = [...allCategories];
+
+      if (mode === 'new') {
+        categoriesToFilter = categoriesToFilter.filter(cat => cat.name !== '未分類');
+      }
+
+      // 檢查是否有其他主題，如果沒有，則即使在 new mode 也顯示「未分類」
+      if (mode === 'new' && categoriesToFilter.length === 0 && allCategories.length > 0) {
+        categoriesToFilter = [...allCategories];
+      }
+
+      setFilteredCategories([{ id: -1, name: '請選擇主題' }, ...categoriesToFilter]);
+    }, [allCategories, mode]);
   
     // 當主題改變時載入對應的子主題
     const handleCategoryChange = useCallback(async (categoryId: number, isEditMode = false, initialSubCategoryId?: number) => {
@@ -222,80 +238,67 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             const response = await fetch(`/api/categories/${newCategoryId}`);
             if (!response.ok) throw new Error('獲取主題詳情失敗');
             const data = await response.json();
-            setCategories((prevCategories) => {
-              if (!prevCategories.some((cat) => cat.id === newCategoryId)) {
-                return [...prevCategories, data.data];
+            const newCategory = data.data;
+
+            setAllCategories((prev) => {
+              if (!prev.some((cat) => cat.id === newCategory.id)) {
+                return [...prev, newCategory];
               }
-              return prevCategories;
+              return prev;
             });
-            setNewlyAddedCategoryId(newCategoryId);
-          } catch {
-            console.error('獲取新主題詳情失敗');
+
+            // 設定觸發器，讓另一個 useEffect 去更新表單
+            setNewlyAddedCategoryId(newCategory.id);
+
+          } catch (error) {
+            console.error('處理新主題失敗:', error);
+            toast.error('處理新主題失敗');
+          } finally {
+            // 清除來自 context 的觸發器
+            setNewCategoryId(null);
           }
         };
         fetchNewCategory();
-        setNewCategoryId(null);
       }
-    }, [newCategoryId, setNewCategoryId])
-  
-    // 當主題更新後，設置表單值
-     
-    useEffect(() => {
-      console.log(newlyAddedCategoryId);
-      
-      if (newlyAddedCategoryId && categories.some(cat => cat.id === newlyAddedCategoryId)) {
-        form.setValue('categoryId', newlyAddedCategoryId)
-        form.setValue('subCategoryId', undefined)
-        handleCategoryChange(newlyAddedCategoryId, false)
-        setNewlyAddedCategoryId(null)
-      }
-    }, [categories, subCategories, newlyAddedCategoryId, newlyAddedSubCategoryId, form, handleCategoryChange])
+    }, [newCategoryId, setNewCategoryId]);
   
     // 處理新增的子主題
-     
     useEffect(() => {
-      console.log(newSubCategoryId);
       if (newSubCategoryId) {
-        console.log(newSubCategoryId);
-        
         const fetchNewSubCategory = async () => {
           try {
             const response = await fetch(`/api/sub-categories/${newSubCategoryId}`);
             if (!response.ok) throw new Error('獲取子主題詳情失敗');
             const data = await response.json();
-            setSubCategories((prevSubCategories) => {
-              if (!prevSubCategories.some((subCat) => subCat.id === newSubCategoryId)) {
-                return [...prevSubCategories, data.data];
+            const newSubCategory = data.data;
+
+            setSubCategories((prev) => {
+              if (!prev.some((sub) => sub.id === newSubCategory.id)) {
+                return [...prev, newSubCategory];
               }
-              return prevSubCategories;
+              return prev;
             });
-            setNewlyAddedSubCategoryId(newSubCategoryId);
-          } catch {
-            console.error('獲取新子主題詳情失敗');
+
+            form.setValue('subCategoryId', newSubCategory.id);
+
+          } catch (error) {
+            console.error('獲取新子主題詳情失敗:', error);
           }
         };
         fetchNewSubCategory();
         setNewSubCategoryId(null);
       }
-    }, [newSubCategoryId, setNewSubCategoryId])
-  
-    // 當子主題更新後，設置表單值
-     
-    useEffect(() => {
-      console.log(newlyAddedSubCategoryId);
+    }, [newSubCategoryId, setNewSubCategoryId, form]);
 
-      if (newlyAddedSubCategoryId && subCategories.some(subCat => subCat.id === newlyAddedSubCategoryId)) {
-        console.log(newlyAddedSubCategoryId);
-        const isSubCategoryValid = subCategories.find(
-          (subCat) => subCat.id === newlyAddedSubCategoryId
-        );
-        if (isSubCategoryValid?.categoryId === form.getValues('categoryId')) {
-          form.setValue('subCategoryId', isSubCategoryValid?.id);
-        } else {
-          form.setValue('subCategoryId', undefined);
-        }
+    // 當新主題被添加且出現在過濾後的列表中時，更新表單
+    useEffect(() => {
+      if (newlyAddedCategoryId && filteredCategories.some(cat => cat.id === newlyAddedCategoryId)) {
+        form.setValue('categoryId', newlyAddedCategoryId);
+        form.trigger('categoryId'); // 觸發驗證
+        handleCategoryChange(newlyAddedCategoryId, false);
+        setNewlyAddedCategoryId(null); // 重置觸發器
       }
-    }, [subCategories, newlyAddedSubCategoryId, form])
+    }, [newlyAddedCategoryId, filteredCategories, form, handleCategoryChange]);
     
     // 檢查是否有新的標籤ID
      
@@ -785,7 +788,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                                 form.setValue('subCategoryId', undefined);
                                 setSubCategories([]);
                               } else {
-                                const selectedCategory = categories.find(cat => cat.id.toString() === value);
+                                const selectedCategory = allCategories.find(cat => cat.id.toString() === value);
                                 form.setValue('categoryId', selectedCategory?.id);
                                 // 立即清空子主題選擇
                                 form.setValue('subCategoryId', undefined);
@@ -801,7 +804,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-[300px] overflow-y-auto">
-                              {categories.map((category) => (
+                              {filteredCategories.map((category) => (
                                 <SelectItem key={category.id} value={category.id.toString()}>
                                   {category.name}
                                 </SelectItem>

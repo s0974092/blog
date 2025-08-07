@@ -263,6 +263,7 @@ model Post {
   title         String?
   slug          String       @unique
   content       Json?
+  contentText   String?      @map("content_text") // 新增：文章純文字內容，用於搜尋和摘要
   authorId      String?      @map("author_id")
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @default(now())
@@ -283,7 +284,7 @@ model Post {
 ```prisma
 model Category {
   id            Int           @id @default(autoincrement())
-  name          String
+  name          String        @unique // 名稱必須唯一
   isDefault     Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @default(now())
@@ -315,6 +316,13 @@ model Tag {
 - `GET /api/posts/[id]` - 獲取單篇文章
 - `PUT /api/posts/[id]` - 更新文章
 - `DELETE /api/posts/[id]` - 刪除文章
+- `GET /api/posts/generate-slug` - 根據文章標題生成拼音 slug
+  - **功能**: 將中文標題轉換為 URL 友善的拼音 slug。
+  - **使用方式**: 前端發送標題到此 API，後端返回生成的 slug。
+  - **內部實現**: 使用 `pinyin` 庫進行轉換。
+- `GET /api/posts/validate-slug` - 驗證 slug 是否已存在
+  - **功能**: 檢查給定的 slug 是否已被其他文章使用。
+  - **使用方式**: 用於文章創建/編輯時的 slug 唯一性檢查。
 
 ### 2. 分類 API (`app/api/categories/`)
 - `GET /api/categories` - 獲取分類列表

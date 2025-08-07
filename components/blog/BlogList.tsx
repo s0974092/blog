@@ -7,16 +7,17 @@ import type { Post } from '@/types/post-card';
 import BlogSearchBar from '@/components/blog/BlogSearchBar';
 import { AnimatePresence, motion } from 'framer-motion';
 import BlogCardSkeleton from '@/components/blog/BlogCardSkeleton';
-import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 const PAGE_SIZE = 5;
 
 interface BlogListProps {
   initialPosts: Post[];
   initialHasMore: boolean;
+  headerHeight: number; // 新增：接收 Header 高度
+  isHeaderVisible: boolean; // 新增：接收 Header 可見性狀態
 }
 
-export default function BlogList({ initialPosts, initialHasMore }: BlogListProps) {
+export default function BlogList({ initialPosts, initialHasMore, headerHeight, isHeaderVisible }: BlogListProps) {
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -28,18 +29,6 @@ export default function BlogList({ initialPosts, initialHasMore }: BlogListProps
   const [subCategoryId, setSubCategoryId] = useState<number | ''>('');
   const [sort, setSort] = useState('newest');
   const [isResetLoading, setIsResetLoading] = useState(false);
-
-  // 滾動方向監聽
-  const scrollDirection = useScrollDirection();
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-
-  useEffect(() => {
-    if (scrollDirection === 'down') {
-      setIsHeaderVisible(false);
-    } else {
-      setIsHeaderVisible(true);
-    }
-  }, [scrollDirection]);
 
   // 載入文章
   const fetchPosts = useCallback(async (pageNum: number, opts?: { reset?: boolean }) => {
@@ -72,6 +61,8 @@ export default function BlogList({ initialPosts, initialHasMore }: BlogListProps
     }
   }, [search, categoryId, subCategoryId, sort]);
 
+  const topOffset = headerHeight;
+
   // 初始載入 & 條件變更時重查
   useEffect(() => {
     // Skip initial fetch since we have initialPosts
@@ -102,9 +93,8 @@ export default function BlogList({ initialPosts, initialHasMore }: BlogListProps
   return (
     <>
       <div 
-        className={`sticky z-40 backdrop-blur bg-transparent rounded-lg p-2 transition-all duration-300 ease-in-out ${
-          isHeaderVisible ? 'top-[84px]' : 'top-0'
-        }`}
+        className={`sticky z-40 backdrop-blur bg-transparent rounded-lg p-2 transition-all duration-300 ease-in-out`}
+        style={{ top: isHeaderVisible ? `${topOffset}px` : '0px' }}
       >
         <BlogSearchBar
           search={search}
