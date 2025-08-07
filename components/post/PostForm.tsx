@@ -30,10 +30,16 @@ import { debounce } from 'lodash'
 import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Edit3 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useCategoryContext } from "./context"
-import { generatePinyin, generateFileName } from "@/lib/utils";
+import { generateFileName } from "@/lib/utils";
 import { PostImageUploader } from "./PostImageUploader";
 import { YooptaContentValue } from '@yoopta/editor';
-import { PostEditor, PostEditorRef } from "./PostEditor";
+import { PostEditorRef } from "./PostEditor";
+import dynamic from 'next/dynamic';
+
+const PostEditor = dynamic(() => import('./PostEditor').then(mod => mod.PostEditor), { 
+  ssr: false, 
+  loading: () => <p>Loading...</p> 
+});
 
 interface PostFormProps {
   mode: 'new' | 'edit';
@@ -351,23 +357,8 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       };
     }, [isEditorFullscreen]);
 
-    // 根據標題自動生成 Slug
-    const handleTitleChange = (title: string) => {
-      form.setValue('title', title);
-      if (!title) {
-        form.setValue('slug', ''); // 清空 slug
-        form.setValue('slugStatus', undefined); // 清空狀態
-        return;
-      }
-      const slug = generatePinyin(title);
-  
-      form.setValue('slug', slug);
-      form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
-      validateSlug(slug);
-    }
-  
     // 驗證 Slug 是否重複
-    const validateSlug = debounce(async (slug: string) => {
+    const validateSlug = useCallback(debounce(async (slug: string) => {
       try {
         if (!slug) {
           form.setValue('slug', ''); // 清空 slug
@@ -401,7 +392,31 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         toast.error('驗證 Slug 失敗');
         form.setValue('slugStatus', 'error');
       }
-    }, 700); // 設定 debounce 時間為 700 毫秒
+    }, 700), [form, mode, postId]);
+
+    // 根據標題自動生成 Slug
+    const handleTitleChange = useCallback(debounce(async (title: string) => {
+      form.setValue('title', title);
+      if (!title) {
+        form.setValue('slug', ''); // 清空 slug
+        form.setValue('slugStatus', undefined); // 清空狀態
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/posts/generate-slug?title=${title}`);
+        if (!response.ok) throw new Error('生成 Slug 失敗');
+        const data = await response.json();
+        const slug = data.slug;
+
+        form.setValue('slug', slug);
+        form.setValue('slugStatus', 'validating'); // 設置為驗證中狀態
+        validateSlug(slug);
+      } catch (error) {
+        console.error('生成 Slug 失敗:', error);
+        toast.error('生成 Slug 失敗');
+      }
+    }, 500), [form, validateSlug]);
   
     // 新增主題
     const handleAddCategory = () => {
