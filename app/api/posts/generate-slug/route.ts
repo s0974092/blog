@@ -6,7 +6,7 @@ import pinyin from "pinyin"
  * @param text 要轉換的中文文字
  * @returns 格式化後的拼音字串
  */
-export function generatePinyin(text: string) {
+function generatePinyin(text: string) {
   return pinyin(text, {
     style: pinyin.STYLE_NORMAL, // 使用普通拼音樣式
   })
