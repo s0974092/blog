@@ -31,9 +31,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL(SITE_CONFIG.url),
-  alternates: {
-    canonical: '/',
-  },
+  
   openGraph: {
     ...SITE_CONFIG.openGraph,
     url: '/',

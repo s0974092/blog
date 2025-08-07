@@ -1,7 +1,11 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'sonner'
+import dynamic from 'next/dynamic'
+
+const Toaster = dynamic(() => import('sonner').then((mod) => mod.Toaster), {
+  ssr: false,
+});
 import { useState, type ReactNode } from 'react'
 
 interface ProvidersProps {

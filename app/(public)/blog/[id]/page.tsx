@@ -40,6 +40,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       ? cleanDescription.substring(0, 200) + '...' 
       : cleanDescription;
 
+    // 如果動態生成的 description 過短或為空，則使用 SITE_CONFIG.description 作為備用
+    const finalDescription = description.length > 10 ? description : SITE_CONFIG.description;
+
     // 生成關鍵字
     const keywords = [
       post.title,
@@ -51,12 +54,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
     return {
       title: `${post.title}`,
-      description,
+      description: finalDescription,
       keywords,
       authors: [{ name: SITE_CONFIG.author }],
       openGraph: {
         title: post.title,
-        description,
+        description: finalDescription,
         type: 'article',
         url: `${SITE_CONFIG.url}/blog/${post.slug}`,
         images: post.coverImageUrl ? [
@@ -75,27 +78,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       twitter: {
         card: 'summary_large_image',
         title: post.title,
-        description,
+        description: finalDescription,
         images: post.coverImageUrl ? [post.coverImageUrl] : [],
       },
       alternates: {
         canonical: `${SITE_CONFIG.url}/blog/${post.slug}`,
       },
       other: {
-        'og:description': description,
-        'twitter:description': description,
+        'og:description': finalDescription,
+        'twitter:description': finalDescription,
       },
     };
   } catch (error) {
     console.error('生成metadata失敗:', error);
     return {
       title: '部落格文章',
-      description: '閱讀精彩的部落格文章。'
+      description: SITE_CONFIG.description // 使用 SITE_CONFIG.description 作為錯誤時的備用
     };
   }
 }
 
-// 從內容中提取純文字
+// 從內容中提取純文字 (遞迴處理)
 function extractTextFromContent(content: unknown): string {
   if (!content) return '';
   
@@ -107,28 +110,11 @@ function extractTextFromContent(content: unknown): string {
   
   if (Array.isArray(content)) {
     content.forEach(item => {
-      if (typeof item === 'object' && item !== null && 'type' in item && 'children' in item) {
-        const typedItem = item as { type: string; children?: unknown[] };
-        if (typedItem.type === 'paragraph' && typedItem.children) {
-          typedItem.children.forEach((child: unknown) => {
-            if (typeof child === 'object' && child !== null && 'text' in child) {
-              const typedChild = child as { text?: string };
-              if (typedChild.text) {
-                text += typedChild.text;
-              }
-            }
-          });
-          text += ' ';
-        } else if (typedItem.type === 'heading' && typedItem.children) {
-          typedItem.children.forEach((child: unknown) => {
-            if (typeof child === 'object' && child !== null && 'text' in child) {
-              const typedChild = child as { text?: string };
-              if (typedChild.text) {
-                text += typedChild.text;
-              }
-            }
-          });
-          text += ' ';
+      if (typeof item === 'object' && item !== null) {
+        if ('text' in item && typeof (item as { text?: string }).text === 'string') {
+          text += (item as { text: string }).text;
+        } else if ('children' in item && Array.isArray((item as { children?: unknown[] }).children)) {
+          text += extractTextFromContent((item as { children: unknown[] }).children) + ' ';
         }
       }
     });
