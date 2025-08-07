@@ -7,12 +7,13 @@ import { motion } from 'framer-motion';
 
 interface BlogCardProps {
   post: Post;
+  priority?: boolean;
   onCategoryClick?: (id: number | undefined) => void;
   onSubCategoryClick?: (id: number | undefined) => void;
   onTagClick?: (name: string) => void;
 }
 
-export default function BlogCard({ post, onCategoryClick, onSubCategoryClick, onTagClick }: BlogCardProps) {
+export default function BlogCard({ post, priority = false, onCategoryClick, onSubCategoryClick, onTagClick }: BlogCardProps) {
   return (
     <motion.article
       initial={{ opacity: 0, y: 30 }}
@@ -28,7 +29,7 @@ export default function BlogCard({ post, onCategoryClick, onSubCategoryClick, on
             width={600}
             height={338}
             className="w-full aspect-[16/9] object-cover"
-            priority
+            priority={priority}
           />
         </Link>
       )}

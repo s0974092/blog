@@ -122,10 +122,11 @@ export default function BlogPage() {
           {isResetLoading
             ? Array.from({ length: 5 }).map((_, i) => <BlogCardSkeleton key={i} />)
             : [
-                ...posts.map((post) => (
+                ...posts.map((post, index) => (
                   <BlogCard
                     key={post.id}
                     post={post}
+                    priority={index === 0} // Only the first card gets priority
                     onCategoryClick={id => {
                       setCategoryId(id || '');
                       setSubCategoryId('');
