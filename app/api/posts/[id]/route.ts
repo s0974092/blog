@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server';
+import { yooptaToPlainText } from '@/lib/yoopta-utils';
 
 export async function GET(
     request: Request,
@@ -114,11 +115,15 @@ export async function PUT(
         }
       }
 
+      // 將 Yoopta JSON 內容轉換為純文字
+      const contentText = yooptaToPlainText(content);
+
       const updatedPost = await prisma.post.update({
         where: isUuid ? { id } : { slug: id },
         data: {
           title,
           content,
+          contentText: contentText, // 儲存純文字版本
           categoryId,
           subcategoryId: subCategoryId,
           published: isPublished,

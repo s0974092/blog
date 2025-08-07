@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { yooptaToPlainText } from '@/lib/yoopta-utils'
 
 // 文章驗證schema
 const postSchema = z.object({
@@ -52,11 +53,15 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // 將 Yoopta JSON 內容轉換為純文字
+    const contentText = yooptaToPlainText(body.content);
+
     // 創建文章並同時建立 PostTag 關聯
     const post = await prisma.post.create({
       data: {
         title: body.title,
         content: body.content,
+        contentText: contentText, // 儲存純文字版本
         categoryId: body.categoryId,
         subcategoryId: body.subcategoryId,
         slug: body.slug,

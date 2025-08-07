@@ -396,7 +396,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
 
     // 根據標題自動生成 Slug
     const handleTitleChange = useCallback(debounce(async (title: string) => {
-      form.setValue('title', title);
       if (!title) {
         form.setValue('slug', ''); // 清空 slug
         form.setValue('slugStatus', undefined); // 清空狀態
@@ -641,8 +640,8 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                             placeholder="請輸入文章標題"
                             {...field}
                             onChange={(e) => {
-                              handleTitleChange(e.target.value);
-                              form.trigger("title"); // 手動觸發驗證
+                              field.onChange(e.target.value); // 立即更新表單值
+                              handleTitleChange(e.target.value); // 觸發 debounced 函數
                             }}
                           />
                         </FormControl>
