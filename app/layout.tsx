@@ -59,8 +59,7 @@ export default function RootLayout({
     <html lang="zh-TW">
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/blog.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/blog.svg" />
+        <link rel="apple-touch-icon" href="/yj-brand-logo.png" />
         <meta name="theme-color" content="#3b82f6" />
         <link rel="manifest" href="/manifest.json" />
       </head>

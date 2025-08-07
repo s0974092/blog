@@ -9,6 +9,11 @@
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "/yj-brand-logo.png",
+      "sizes": "any",
+      "type": "image/png"
+    },
+    {
       "src": "/blog.svg",
       "sizes": "any",
       "type": "image/svg+xml",
@@ -16,7 +21,7 @@
     },
     {
       "src": "/favicon.ico",
-      "sizes": "16x16 32x32 48x48",
+      "sizes": "16x16 32x32 48x48 256x256",
       "type": "image/x-icon"
     }
   ],
