@@ -505,6 +505,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             body: JSON.stringify({
               ...values,
               content: editorContent,
+              contentText: values.content, // 將純文字內容傳送給後端
               coverImageUrl
             }),
           });
@@ -518,6 +519,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             body: JSON.stringify({
               ...values,
               content: editorContent,
+              contentText: values.content, // 將純文字內容傳送給後端
               coverImageUrl
             }),
           });

@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server';
-import { yooptaToPlainText } from '@/lib/yoopta-utils';
 
 export async function GET(
     request: Request,
@@ -86,7 +85,7 @@ export async function PUT(
       // 判斷 id 是否為 uuid，否則用 slug 查詢
       const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
       const body = await request.json();
-      const { title, content, categoryId, subCategoryId, tagIds, isPublished, slug, coverImageUrl } = body;
+      const { title, content, categoryId, subCategoryId, tagIds, isPublished, slug, coverImageUrl, contentText } = body;
 
       if (!title || !content) {
         return NextResponse.json(
@@ -114,9 +113,6 @@ export async function PUT(
           );
         }
       }
-
-      // 將 Yoopta JSON 內容轉換為純文字
-      const contentText = yooptaToPlainText(content);
 
       const updatedPost = await prisma.post.update({
         where: isUuid ? { id } : { slug: id },
