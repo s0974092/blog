@@ -28,6 +28,7 @@ export default function BlogCard({ post, priority = false, onCategoryClick, onSu
             alt={post.title}
             width={600}
             height={338}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="w-full aspect-[16/9] object-cover"
             priority={priority}
           />
