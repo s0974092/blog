@@ -62,6 +62,48 @@ type Tag = {
   name: string
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Define a more precise type for Yoopta content nodes
+interface YooptaContentNode {
+  id?: string;
+  type?: string;
+  meta?: any;
+  value?: any;
+  props?: { src?: string; [key: string]: any };
+  children?: YooptaContentNode[];
+  [key: string]: any; // Allow other properties
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Helper function to extract image URLs from Yoopta content
+const extractImageUrlsFromContent = (content: any): string[] => {
+  const urls = new Set<string>();
+
+  const findImageUrls = (data: YooptaContentNode) => {
+    if (!data) return;
+
+    if (Array.isArray(data)) {
+      data.forEach(item => findImageUrls(item));
+    } else if (typeof data === 'object' && data !== null) {
+      // Use type guards to safely access properties
+      if (data.type === 'image' && data.props && typeof data.props.src === 'string') {
+        urls.add(data.props.src);
+      }
+
+      // Iterate over all keys of the object
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          // Recursively call findImageUrls on the value of the key
+          findImageUrls(data[key]);
+        }
+      }
+    }
+  };
+
+  findImageUrls(content);
+  return Array.from(urls);
+};
+
 const PostForm = ({ mode, postId }: PostFormProps) => {
     const router = useRouter()
     // 新增一個狀態變數來追蹤是否資料已載入完成
@@ -73,6 +115,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     const [tags, setTags] = useState<Tag[]>([])
     const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
     const [oldCoverImageUrl, setOldCoverImageUrl] = useState<string | undefined>(undefined);
+    const [initialImageUrls, setInitialImageUrls] = useState<string[]>([]);
     const [isLoadingSubCategories, setIsLoadingSubCategories] = useState(false);
     const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null);
     const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null);
@@ -174,9 +217,13 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             form.setValue('coverImageUrl', post.coverImageUrl || "");
             setOldCoverImageUrl(post.coverImageUrl || undefined);
             
-            // 設置編輯器內容
+            // 設置編輯器內容並提取初始圖片
             if (post?.content) {
               setEditorValue(post.content);
+              const initialImages = extractImageUrlsFromContent(post.content);
+              setInitialImageUrls(initialImages);
+              // --- Log for Image Cleanup --- //
+              // console.log("✅ Initial images captured:", initialImages);
             }
 
             // 在編輯模式下，先載入子主題，然後設置子主題值
@@ -192,7 +239,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       };
 
       fetchInitialData();
-    }, []);
+    }, [mode, postId]); // Simplified dependencies
 
     // 當 allCategories 或 mode 變化時，更新過濾後的主題列表
     useEffect(() => {
@@ -324,16 +371,12 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     // 檢查是否有新的標籤ID
      
     useEffect(() => {
-      console.log("從 Context 獲取的新標籤 ID:", contextNewTagId);
-      
       if (contextNewTagId) {
         // 添加新標籤ID到表單
         const currentTagIds = form.getValues('tagIds') || []
-        console.log("當前 tagIds:", currentTagIds);
         
         if (!currentTagIds.includes(contextNewTagId)) {
           const updatedTagIds = [...currentTagIds, contextNewTagId]
-          console.log("更新後的 tagIds:", updatedTagIds);
           
           form.setValue('tagIds', updatedTagIds)
           
@@ -482,22 +525,37 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         .getPublicUrl(fileName);
       return publicUrlData.publicUrl;
     }
-    // 刪除 Supabase Storage 圖片
-    async function deleteImageFromSupabase(url: string) {
+
+    // 刪除 Supabase Storage 封面圖片
+    async function deleteCoverImageFromSupabase(url: string) {
       try {
         const parts = url.split('/');
         const fileName = parts[parts.length - 1];
         await supabase.storage.from('post-cover-images').remove([fileName]);
       } catch (error) {
-        console.log('刪除圖片失敗', error);
+        console.log('刪除封面圖片失敗', error);
+      }
+    }
+
+    // 刪除 Supabase Storage 內容圖片
+    async function deleteContentImageFromSupabase(url: string) {
+      if (!url.includes('supabase.co')) {
+        return;
+      }
+      try {
+        const urlParts = url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        const { error } = await supabase.storage.from('post-content-images').remove([fileName]);
+        if (error) {
+          console.error('刪除內容圖片失敗:', error);
+        }
+      } catch (error) {
+        console.error('刪除內容圖片時發生錯誤:', error);
       }
     }
 
     // 儲存前格式轉換
     const onSubmit = async (values: FormValues) => {      
-      console.log('onSubmit values:', values);
-      console.log(values.slugStatus);   
-      
       if (form.getFieldState('slugStatus').isDirty && values.slugStatus !== "success") {
         form.setError("slug", {
           type: "manual",
@@ -505,8 +563,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         });
         return;
       }
-    
-      console.log(values);
     
       setIsSubmitting(true);
     
@@ -536,6 +592,22 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           if (!response.ok) throw new Error("新增文章失敗");
           toast.success("文章新增成功");
         } else if (mode === "edit" && postId) {
+          // 從當前編輯器內容中提取圖片 URL
+          const currentImages = extractImageUrlsFromContent(editorContent);
+          
+          // --- Log for Image Cleanup --- //
+          // console.log("✅ Initial images captured:", initialImageUrls);
+          // console.log("✅ Current images in editor:", currentImages);
+
+          const deletedImages = initialImageUrls.filter(url => !currentImages.includes(url));
+
+          if (deletedImages.length > 0) {
+            // --- Log for Image Cleanup --- //
+            // console.log("🔥 Images to be deleted:", deletedImages);
+            // toast.info(`正在刪除 ${deletedImages.length} 張未使用的內容圖片...`);
+            await Promise.all(deletedImages.map(url => deleteContentImageFromSupabase(url)));
+          }
+
           // 編輯文章
           const response = await fetch(`/api/posts/${postId}`, {
             method: "PUT",
@@ -550,7 +622,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           if (!response.ok) throw new Error("編輯文章失敗");
           // 若有舊圖片且有更換，刪除舊圖片
           if (oldCoverImageUrl && oldCoverImageUrl !== coverImageUrl) {
-            await deleteImageFromSupabase(oldCoverImageUrl);
+            await deleteCoverImageFromSupabase(oldCoverImageUrl);
           }
           toast.success("文章編輯成功");
         }
@@ -1015,7 +1087,6 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                     type="button"
                     variant="outline"
                     onClick={() => { 
-                      console.log("當前表單值:", form.getValues()); 
                       router.back();
                     }}
                   >

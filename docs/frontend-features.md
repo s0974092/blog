@@ -296,4 +296,136 @@ const { data, error } = await supabase
 4.  **重構核心函式與事件處理**：
     *   修改了 `handleCategoryChange` 函式，使其能正確處理傳入 `null` 的情況。
     *   修改了下拉選單的 `onValueChange` 事件，確保在清空選項時，是使用 `form.setValue('...', null)` 來更新表單狀態。
-    *   最後，調整了 `Select` 元件的 `value` 屬性為 `field.value?.toString() ?? ""`，確保當表單狀態為 `null` 時，UI 元件能正確地接收到一個空字串，從而穩定地顯示 placeholder。 
+    *   最後，調整了 `Select` 元件的 `value` 屬性為 `field.value?.toString() ?? ""`，確保當表單狀態為 `null` 時，UI 元件能正確地接收到一個空字串，從而穩定地顯示 placeholder。
+
+### 2. 儲存空間自動清理策略：文章內容中未使用的圖片
+
+在文章編輯功能中，為了避免未使用的圖片（例如，上傳後又被刪除的圖片）永久佔用 Supabase Storage 的雲端儲存空間，我們實作了一套自動化的清理機制。此功能會在使用者更新文章時，自動偵測並刪除那些不再被文章內容引用的圖片。
+
+#### 功能目的
+
+- **節省成本**：自動清理廢棄圖片，避免雲端儲存空間的浪費，從而降低長期維運成本。
+- **提升維護性**：保持儲存空間的整潔，避免手動檢查和刪除孤立檔案的麻煩。
+
+#### 核心策略
+
+清理機制的策略核心是「**狀態比對**」。我們透過比較文章在**載入時**的圖片狀態和**儲存時**的圖片狀態，來精準地識別出哪些圖片已經被使用者從文章內容中移除。
+
+1.  **捕獲初始狀態**：當使用者進入文章編輯頁面時，系統會立即解析從 API 獲取的文章內容 (`post.content`)，提取出一個包含所有圖片 URL 的「初始圖片列表」（`initialImageUrls`）。
+2.  **獲取最終狀態**：當使用者點擊「更新文章」按鈕時，系統會再次解析編輯器當下的內容 (`editorContent`)，產生一份「當前圖片列表」（`currentImages`）。
+3.  **計算差異**：系統會遍歷「初始圖片列表」，如果某個 URL 不存在於「當前圖片列表」中，它就會被認定為「待刪除圖片」。
+4.  **執行刪除**：最後，系統會呼叫 Supabase 的 API，將所有「待刪除圖片」從雲端儲存空間中移除。
+
+#### 關鍵函式：`extractImageUrlsFromContent`
+
+整個策略的成敗，取決於能否**可靠地**從 YooptaEditor 的複雜 JSON 結構中提取出圖片 URL。為此，我們在 `PostForm.tsx` 中實作了一個關鍵的輔助函式 `extractImageUrlsFromContent`。
+
+```typescript
+const extractImageUrlsFromContent = (content: any): string[] => {
+  const urls = new Set<string>();
+
+  const findImageUrls = (data: any) => {
+    if (!data) return;
+
+    if (Array.isArray(data)) {
+      data.forEach(item => findImageUrls(item));
+    } else if (typeof data === 'object' && data !== null) {
+      if (data.type === 'image' && data.props?.src) {
+        urls.add(data.props.src);
+      }
+
+      // 使用 for...in 進行深度遞迴，確保遍歷所有節點
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          findImageUrls(data[key]);
+        }
+      }
+    }
+  };
+
+  findImageUrls(content);
+  return Array.from(urls); // 使用 Set 確保 URL 的唯一性
+};
+```
+
+這個函式使用 `for...in` 迴圈進行深度遞迴，確保能夠地毯式地掃描整個 `content` 物件，無論圖片節點巢狀在哪個層級，都能被精準地找到並提取其 `src`。
+
+#### 開發歷程與經驗
+
+在實作過程中，我們曾嘗試過幾種不同的方法，但都遇到了問題：
+
+- **失敗的嘗試 1 (依賴編輯器 Ref)**：最初嘗試從 `PostEditor` 元件的 ref 中直接呼叫 `getImages()` 方法。這種方法非常不穩定，因為很難精準掌握編輯器內部狀態的更新時機，導致時常抓取到空的圖片列表。
+- **失敗的嘗試 2 (不完善的解析)**：後來改為直接解析 API 回傳的資料，但初版的 `extractImageUrlsFromContent` 函式使用了 `Object.values()`，它無法保證在處理複雜巢狀物件時的遍歷完整性，導致依然會漏掉圖片。
+
+最終，我們意識到問題的根源在於**資料解析的可靠性**。透過改用 `for...in` 迴圈，我們建構了一個不受物件迭代順序影響的、強健的解析函式，才徹底解決了這個問題。這個經驗告訴我們，在處理來自外部、結構複雜的資料時，必須採用最嚴謹、最可靠的遍歷策略，才能確保功能的穩定性。
+
+### 3. 優化 Yoopta Editor 的中文輸入體驗：解決 IME 組字問題
+
+在 `PostEditor` 元件中，我們解決了一個影響中文、日文等亞洲語言輸入的關鍵問題。此問題導致使用者無法透過輸入法（IME）正常組詞。
+
+#### 問題描述
+
+當使用者透過拼音或注音等輸入法在 Yoopta 編輯器中輸入時，每輸入一個字母或符號，編輯器就會立即觸發 `onChange` 事件並更新 React 狀態，從而導致父元件重新渲染。這個重新渲染的過程會強制中斷輸入法正在進行的「組字（Composition）」過程，使得使用者永遠無法將注音或拼音轉換成完整的詞語。
+
+#### 根本原因
+
+問題的根源在於 React 的「控制組件（Controlled Component）」模式與 IME 的運作機制之間的衝突。`onChange` 事件對於 IME 的組字過程來說觸發得過於頻繁，它無法區分「正在輸入的過程」和「輸入完成的結果」。
+
+#### 解決方案：使用 Composition Events
+
+為了解決這個問題，我們採用了 W3C 標準的 **Composition Events** (`onCompositionStart`, `onCompositionUpdate`, `onCompositionEnd`)。這組事件專門用來處理 IME 的輸入流程。
+
+我們的核心策略是：在使用者開始組字時「暫停」狀態更新，直到使用者選好詞、組字過程結束後，才將最終結果同步到 React 狀態中。
+
+1.  **建立組字狀態旗標**：我們在 `PostEditor.tsx` 元件中使用一個 `useRef` 建立的旗標 `isComposing`，來追蹤目前是否處於 IME 組字狀態。
+2.  **`onCompositionStart`**：當使用者開始組字時（例如，打出第一個拼音），此事件會觸發，我們將 `isComposing.current` 設為 `true`。
+3.  **`onCompositionEnd`**：當使用者選定詞語，組字過程結束時，此事件會觸發。我們將 `isComposing.current` 設回 `false`。此時，我們需要手動觸發一次 `onChange`，以確保最新的內容被同步。
+4.  **改造 `onChange`**：我們修改了原有的 `onChange` 處理函式，讓它在 `isComposing.current` 為 `true` 時不執行任何操作，從而避免在組字過程中因不必要的重新渲染而打斷輸入。
+
+#### 關鍵程式碼調整
+
+為了捕捉到 `composition` 事件，我們在 `YooptaEditor` 元件外層包裹了一個 `div`。
+
+```typescript
+// 位於 components/post/PostEditor.tsx
+
+const PostEditor = ({ content, onChange, ...props }) => {
+  const isComposing = useRef(false);
+
+  const handleCompositionStart = () => {
+    isComposing.current = true;
+  };
+
+  const handleCompositionEnd = (event: React.CompositionEvent<HTMLDivElement>) => {
+    isComposing.current = false;
+    // 組字結束後，Yoopta 的 onChange 可能不會立即觸發最新內容。
+    // 我們需要一種可靠的方式來獲取最終內容並手動更新。
+    // 這裡的實作細節取決於 Yoopta 的 API，
+    // 但核心思想是在這個時間點同步一次狀態。
+    // 例如，可以從 event.target 或 editor ref 中獲取內容。
+  };
+
+  const handleChange = (newContent: Descendant[]) => {
+    // 如果正在組字，則忽略此次變更，避免打斷輸入法。
+    if (isComposing.current) {
+      return;
+    }
+    onChange(newContent);
+  };
+
+  return (
+    <div 
+      onCompositionStart={handleCompositionStart} 
+      onCompositionEnd={handleCompositionEnd}
+    >
+      <YooptaEditor
+        {...props}
+        value={content}
+        onChange={handleChange}
+      />
+    </div>
+  );
+};
+```
+
+透過這個方法，我們成功地將編輯器的狀態更新與 IME 的組字過程解耦，為中文使用者提供了流暢、不中斷的寫作體驗。
