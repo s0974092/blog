@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 interface Category {
   id: number;
@@ -31,6 +32,7 @@ const SORT_OPTIONS = [
 export default function BlogSearchBar({ search, categoryId, subCategoryId, sort, onChange }: BlogSearchBarProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [isSubCategoryLoading, setIsSubCategoryLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/categories?all=true')
@@ -40,9 +42,11 @@ export default function BlogSearchBar({ search, categoryId, subCategoryId, sort,
 
   useEffect(() => {
     if (categoryId) {
+      setIsSubCategoryLoading(true);
       fetch(`/api/categories/${categoryId}/sub-categories?all=true`)
         .then(res => res.json())
-        .then(data => setSubCategories(data.data || []));
+        .then(data => setSubCategories(data.data || []))
+        .finally(() => setIsSubCategoryLoading(false));
     } else {
       setSubCategories([]);
     }
@@ -71,18 +75,29 @@ export default function BlogSearchBar({ search, categoryId, subCategoryId, sort,
         </SelectContent>
       </Select>
       <Select
-        value={subCategoryId ? String(subCategoryId) : 'all'}
+        value={isSubCategoryLoading ? '' : (subCategoryId ? String(subCategoryId) : 'all')}
         onValueChange={val => onChange({ search, categoryId, subCategoryId: val === 'all' ? '' : Number(val), sort })}
-        disabled={!categoryId}
+        disabled={!categoryId || isSubCategoryLoading}
       >
         <SelectTrigger className="w-40" aria-label="選擇子主題">
-          <SelectValue placeholder="全部子主題" />
+          <SelectValue placeholder={isSubCategoryLoading ? "載入中..." : "全部子主題"} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">全部子主題</SelectItem>
-          {subCategories.map(sub => (
-            <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>
-          ))}
+          {isSubCategoryLoading ? (
+            <SelectItem value="loading" disabled>
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                載入中...
+              </div>
+            </SelectItem>
+          ) : (
+            <>
+              <SelectItem value="all">全部子主題</SelectItem>
+              {subCategories.map(sub => (
+                <SelectItem key={sub.id} value={String(sub.id)}>{sub.name}</SelectItem>
+              ))}
+            </>
+          )}
         </SelectContent>
       </Select>
       <Select

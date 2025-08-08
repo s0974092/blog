@@ -4,23 +4,30 @@ import { Post } from '@/types/post-card';
 import { BlogDetail } from '@/components/blog/BlogDetail';
 import { SITE_CONFIG } from '@/lib/constants';
 
-// 生成動態metadata
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+// 輔助函數：獲取文章資料
+async function getPost(id: string): Promise<Post | null> {
   try {
-    const { id } = await params;
     const res = await fetch(`${SITE_CONFIG.url}/api/posts/${id}`, {
       next: { revalidate: 3600 } // 快取1小時
     });
     
     if (!res.ok) {
-      return {
-        title: '文章未找到',
-        description: '抱歉，您要查找的文章不存在。'
-      };
+      return null;
     }
 
     const result = await res.json();
-    const post: Post = result.data;
+    return result.data as Post;
+  } catch (error) {
+    console.error('獲取文章失敗:', error);
+    return null;
+  }
+}
+
+// 生成動態metadata
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  try {
+    const { id } = await params;
+    const post = await getPost(id);
 
     if (!post) {
       return {
@@ -160,16 +167,7 @@ function generateStructuredData(post: Post) {
 export default async function BlogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const res = await fetch(`${SITE_CONFIG.url}/api/posts/${id}`, {
-      next: { revalidate: 3600 } // 快取1小時
-    });
-    
-    if (!res.ok) {
-      notFound();
-    }
-
-    const result = await res.json();
-    const post: Post = result.data;
+    const post = await getPost(id);
 
     if (!post) {
       notFound();

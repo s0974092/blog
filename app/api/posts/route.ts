@@ -18,9 +18,22 @@ export async function GET(request: NextRequest) {
     const where: Prisma.PostWhereInput = {
       AND: [
         all ? {} : { published: true },
-        search ? { title: { contains: search, mode: 'insensitive' } } : {},
         categoryId ? { categoryId: Number(categoryId) } : {},
         subCategoryId ? { subcategoryId: Number(subCategoryId) } : {},
+        search ? {
+          OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            {
+              tags: {
+                some: {
+                  tag: {
+                    name: { contains: search, mode: 'insensitive' },
+                  },
+                },
+              },
+            },
+          ],
+        } : {},
       ],
     };
 
