@@ -57,7 +57,7 @@ export const SITE_CONFIG = {
     siteName: "YJ's Tech & Life Notes",
     images: [
       {
-        url: '/blog.svg',
+        url: '/yj-brand-logo.png',
         width: 1200,
         height: 630,
         alt: 'YJ\'s Tech & Life Notes',
@@ -66,7 +66,7 @@ export const SITE_CONFIG = {
   },
   twitter: {
     card: 'summary_large_image' as const,
-    images: ['/blog.svg'],
+    images: ['/yj-brand-logo.png'],
   },
   robots: {
     index: true,
