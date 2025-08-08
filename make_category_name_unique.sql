@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "categories_name_key" ON "public"."categories"("name");
