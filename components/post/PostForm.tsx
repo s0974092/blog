@@ -62,29 +62,6 @@ type Tag = {
   name: string
 }
 
-type FormValues = z.infer<typeof formSchema>
-
-const formSchema = z.object({
-  title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
-  slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元").optional(),
-  slugStatus: z.enum(["success", "error", "validating"]).optional(),
-  categoryId: z.number().optional().nullable()
-    .refine(val => val != null && val > 0, {
-      message: "請選擇主題"
-    }),
-  subCategoryId: z.number().optional().nullable(),
-  tagIds: z.array(z.number()).optional().default([]),
-  content: z.string().min(1, "內容不能為空"),
-  isPublished: z.boolean().default(false),
-  coverImageUrl: z.string()
-    .refine(
-      val =>
-        /^data:image\/[a-zA-Z]+;base64,/.test(val) ||
-        /^https?:\/\/.+/.test(val),
-      { message: "請提供有效的圖片（base64 或 URL）" }
-    )
-    .optional(),
-});
 const PostForm = ({ mode, postId }: PostFormProps) => {
     const router = useRouter()
     // 新增一個狀態變數來追蹤是否資料已載入完成
@@ -119,6 +96,42 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       form.setValue('content', plainText);
       form.trigger('content');
     };
+
+    const formSchema = z.object({
+      title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
+      slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元").optional(),
+      slugStatus: z.enum(["success", "error", "validating"]).optional(),
+      categoryId: z.number().optional().nullable()
+        .refine(val => val != null && val > 0, {
+          message: "請選擇主題"
+        }),
+      subCategoryId: z.number().optional().nullable(),
+      tagIds: z.array(z.number()).optional().default([]),
+      content: z.string().min(1, "內容不能為空"),
+      isPublished: z.boolean().default(false),
+      coverImageUrl: z.string().nullable().optional(),
+    }).superRefine((data, ctx) => {
+      // Cover image is required in both new and edit modes
+      if (!data.coverImageUrl || data.coverImageUrl.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['coverImageUrl'],
+          message: "請提供有效的圖片（base64 或 URL）",
+        });
+      } else {
+        // If cover image exists, it must be a valid format
+        const isValidFormat = /^data:image\/[a-zA-Z]+;base64,/.test(data.coverImageUrl) || /^https?:\/\/.+/.test(data.coverImageUrl);
+        if (!isValidFormat) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['coverImageUrl'],
+            message: "圖片格式不正確，請提供有效的 base64 或 URL",
+          });
+        }
+      }
+    });
+
+    type FormValues = z.infer<typeof formSchema>
 
     const form = useForm<FormValues>({
       resolver: zodResolver(formSchema),
@@ -737,9 +750,8 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         </div>
                         
                         {/* 第二排：預覽圖片 */}
-                        {/* <div> */}
-                          <PostImageUploader
-                            value={field.value}
+                        <PostImageUploader
+                            value={field.value ?? undefined}
                             onChange={(url, _file) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                               field.onChange(url);
                               // 若需處理 file 上傳，請在 onSubmit 處理
@@ -747,12 +759,11 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                             disabled={isSubmitting}
                             showPreviewOnly={true}
                           />
-                        {/* </div> */}
                         
                         {/* 第三排：選擇上傳圖片 */}
                         <div>
                           <PostImageUploader
-                            value={field.value}
+                            value={field.value ?? undefined}
                             onChange={(url, _file) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                               field.onChange(url);
                               // 若需處理 file 上傳，請在 onSubmit 處理
@@ -765,7 +776,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         {/* 第四排：AI生成的文字prompt和按鈕 */}
                         <div className="w-full">
                           <PostImageUploader
-                            value={field.value}
+                            value={field.value ?? undefined}
                             onChange={(url, _file) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                               field.onChange(url);
                               // 若需處理 file 上傳，請在 onSubmit 處理

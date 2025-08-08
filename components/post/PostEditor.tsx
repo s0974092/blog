@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import YooptaEditor, { createYooptaEditor, YooptaContentValue } from '@yoopta/editor';
 import Paragraph from '@yoopta/paragraph';
 import Link, { LinkElementProps } from '@yoopta/link';
@@ -158,6 +158,7 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
   const selectionRef = selectionBoxRoot || localSelectionRef;
   const isInitialized = useRef(false);
   const MARKS = [Bold, Italic, CodeMark, Underline, Strike, Highlight];
+  const [isComposing, setIsComposing] = useState(false); // 新增狀態來追蹤組字狀態
 
   // 清理 Storage 中的圖片
   const cleanupImageFromStorage = useCallback(async (imageUrl: string) => {
@@ -183,6 +184,40 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
       console.warn('圖片 URL 不包含 supabase.co，跳過刪除:', imageUrl);
     }
   }, []);
+
+    // 處理中文輸入法（IME）組字問題
+    useEffect(() => {
+      const editorElement = selectionRef.current;
+      if (!editorElement) return;
+
+      const handleCompositionStart = () => setIsComposing(true);
+      const handleCompositionEnd = () => setIsComposing(false);
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        // 當用戶使用輸入法（如中文輸入法）時，isComposing 會為 true。
+        // 在此期間，我們不希望編輯器處理按鍵事件（如 Enter 或 Backspace），
+        // 因為這會干擾輸入法的正常組字過程。
+        if (isComposing) {
+          // 停止事件向上傳播，從而阻止 YooptaEditor 的內部按鍵處理程序。
+          event.stopPropagation();
+        }
+      };
+
+      // 'compositionstart' 和 'compositionend' 事件用於跟踪 IME 的狀態。
+      editorElement.addEventListener('compositionstart', handleCompositionStart);
+      editorElement.addEventListener('compositionend', handleCompositionEnd);
+      
+      // 我們在捕獲階段（第三個參數為 true）監聽 keydown 事件。
+      // 這確保我們的處理程序在 YooptaEditor 的任何內部 keydown 處理程序之前運行。
+      editorElement.addEventListener('keydown', handleKeyDown, true);
+
+      return () => {
+        editorElement.removeEventListener('compositionstart', handleCompositionStart);
+        editorElement.removeEventListener('compositionend', handleCompositionEnd);
+        editorElement.removeEventListener('keydown', handleKeyDown, true);
+      };
+    }, [selectionRef, isComposing]);
+  
 
   // 設置圖片刪除回調
   useEffect(() => {
@@ -459,6 +494,7 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>(({
           readOnly={readOnly}
           autoFocus={autoFocus}
           data-readonly={readOnly ? "true" : "false"}
+          placeholder={isComposing ? "" : "輸入 '/' 可呼叫神奇的工具"}
         />
       </div>
       <style jsx>{`
