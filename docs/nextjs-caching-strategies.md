@@ -117,11 +117,84 @@ export async function POST(request: Request) {
 }
 ```
 
+## 客戶端互動與快取策略 (Client-Side Interaction & Caching Strategy)
+
+### 在 ISR 頁面中處理動態搜尋與過濾
+
+當一個頁面同時採用 ISR (增量靜態再生) 並包含需要即時反饋的互動元件（例如搜尋框、篩選器）時，我們需要一個結合伺服器端快取和客戶端資料獲取的混合策略。
+
+**情境：** 部落格列表頁 (`/blog`) 使用 `revalidate = 60` 進行 ISR，但頁面上有一個搜尋框，使用者期望輸入後能立即看到搜尋結果。
+
+**問題：**
+1.  初始頁面由 ISR 提供，是靜態的。
+2.  使用者的搜尋輸入是客戶端事件，必須在瀏覽器中觸發 API 請求以獲取動態結果。
+3.  若未經處理，每次按鍵都可能觸發 API 呼叫，造成伺服器過度負擔和不良的使用者體驗。
+
+**解決策略：**
+
+這是一個結合了 React Hooks 和 Debouncing 技術的最佳實踐：
+
+1.  **保留 ISR 的初始資料**：頁面首次載入時，直接使用 Next.js 透過 ISR 提供的 `initialPosts`，確保快速的初始載入速度。
+
+2.  **使用 `useEffect` 監聽互動狀態**：在客戶端元件中，使用 `useEffect` 來監聽搜尋關鍵字 (`search`) 或過濾條件 (`categoryId`) 的變化。
+
+3.  **使用 `useRef` 防止首次渲染觸發 API**：為了避免頁面載入時就錯誤地觸發一次 API 呼叫（這會覆蓋掉 ISR 提供的寶貴初始資料），我們使用 `useRef` 來記錄是否為首次渲染。在 `useEffect` 中，如果是首次渲染，則直接跳過，不執行任何操作。
+
+4.  **引入 Debouncing 機制**：
+    *   **目的**：防止使用者在快速輸入時，每次按鍵都觸發 API 請求。
+    *   **實作**：使用 `use-debounce` 這類成熟的套件，將使用者的輸入狀態（例如 `search`）轉換為一個延遲更新的狀態（`debouncedSearch`）。
+    *   **效果**：只有當使用者停止輸入一小段時間（例如 300 毫秒）後，`debouncedSearch` 的值才會更新，進而觸發 `useEffect` 呼叫 API。這在效能和使用者體驗之間取得了絕佳的平衡。
+
+**程式碼範例 (`components/blog/BlogList.tsx`):**
+
+```typescript
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { useDebounce } from 'use-debounce';
+
+// ...
+
+export default function BlogList({ initialPosts, ... }) {
+  // 1. 初始資料來自 ISR
+  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  
+  // 2. 使用者輸入的即時狀態
+  const [search, setSearch] = useState('');
+  
+  // 4. Debounce 後的狀態，延遲 300ms 更新
+  const [debouncedSearch] = useDebounce(search, 300);
+
+  // 3. useRef 旗標，用於跳過首次渲染
+  const isInitialRender = useRef(true);
+
+  // ... fetchPosts 函式 ...
+
+  // 核心邏輯：監聽 debouncedSearch 的變化
+  useEffect(() => {
+    // 如果是首次渲染，則將旗標設為 false 並直接返回
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
+    // 在後續的渲染中，當 debouncedSearch 改變時，呼叫 API 獲取新資料
+    fetchPosts(1, { reset: true });
+  }, [debouncedSearch, categoryId, subCategoryId, sort]); // 依賴項包含 debounce 後的狀態
+
+  // ...
+}
+```
+
+這個策略確保了：
+*   **高效的首次載入**：得益於 ISR。
+*   **流暢的使用者體驗**：搜尋反饋即時，且不會因過多請求而卡頓。
+*   **優化的伺服器效能**：透過 Debouncing 大幅減少了不必要的 API 呼叫。
+
 ## 總結與建議
 
 *   **靜態內容**：使用預設的快取行為或 `revalidate = false`。
 *   **部落格文章等不頻繁更新的內容**：使用 **ISR (`revalidate = N`)**，設定一個合理的秒數（例如 60 秒、300 秒或更長），以平衡即時性和性能。
 *   **需要絕對即時的內容**：使用 `revalidate = 0` 或 `fetch` 的 `cache: 'no-store'`。
 *   **後台管理系統**：結合 **按需重新驗證**，在資料變更時手動觸發重新驗證，以確保前台資料的即時性。
+*   **ISR 頁面上的動態元件**：採用上述的**客戶端互動與快取策略**，結合 `useRef` 和 `debounce`，以實現最佳的混合式體驗。
 
 透過靈活運用這些快取策略，你可以為你的 Next.js 應用程式實現最佳的性能和用戶體驗。

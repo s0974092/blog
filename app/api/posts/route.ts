@@ -15,23 +15,14 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'newest';
 
     // 構建查詢條件
-    let where: Prisma.PostWhereInput = all ? {} : { published: true };
-    // 如果有搜尋關鍵字，添加搜尋條件
-    if (search) {
-      where = {
-        ...where,
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { contentText: { contains: search, mode: 'insensitive' } },
-        ],
-      };
-    }
-    if (categoryId) {
-      where = { ...where, categoryId: Number(categoryId) };
-    }
-    if (subCategoryId) {
-      where = { ...where, subcategoryId: Number(subCategoryId) };
-    }
+    const where: Prisma.PostWhereInput = {
+      AND: [
+        all ? {} : { published: true },
+        search ? { title: { contains: search, mode: 'insensitive' } } : {},
+        categoryId ? { categoryId: Number(categoryId) } : {},
+        subCategoryId ? { subcategoryId: Number(subCategoryId) } : {},
+      ],
+    };
 
     // 決定排序條件
     let orderBy: Prisma.PostOrderByWithRelationInput = { createdAt: 'desc' };

@@ -7,6 +7,7 @@ import type { Post } from '@/types/post-card';
 import BlogSearchBar from '@/components/blog/BlogSearchBar';
 import { AnimatePresence, motion } from 'framer-motion';
 import BlogCardSkeleton from '@/components/blog/BlogCardSkeleton';
+import { useDebounce } from 'use-debounce';
 
 const PAGE_SIZE = 5;
 
@@ -29,6 +30,8 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
   const [subCategoryId, setSubCategoryId] = useState<number | ''>('');
   const [sort, setSort] = useState('newest');
   const [isResetLoading, setIsResetLoading] = useState(false);
+  const [debouncedSearch] = useDebounce(search, 300);
+  const isInitialRender = useRef(true);
 
   // 載入文章
   const fetchPosts = useCallback(async (pageNum: number, opts?: { reset?: boolean }) => {
@@ -42,7 +45,7 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
         page: String(pageNum),
         pageSize: String(PAGE_SIZE),
       });
-      if (search) params.append('search', search);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       if (categoryId) params.append('categoryId', String(categoryId));
       if (subCategoryId) params.append('subCategoryId', String(subCategoryId));
       if (sort) params.append('sort', sort);
@@ -59,16 +62,18 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
       setLoading(false);
       if (opts?.reset) setIsResetLoading(false);
     }
-  }, [search, categoryId, subCategoryId, sort]);
+  }, [debouncedSearch, categoryId, subCategoryId, sort]);
 
   const topOffset = headerHeight;
 
   // 初始載入 & 條件變更時重查
   useEffect(() => {
-    // Skip initial fetch since we have initialPosts
-    if (page === 1 && posts.length > 0) return;
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
     fetchPosts(1, { reset: true });
-  }, [search, categoryId, subCategoryId, sort]);
+  }, [debouncedSearch, categoryId, subCategoryId, sort]);
 
   // Intersection Observer 監聽底部
   useEffect(() => {
@@ -107,7 +112,6 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
             setCategoryId(categoryId);
             setSubCategoryId(subCategoryId);
             setSort(sort);
-            fetchPosts(1, { reset: true });
           }}
         />
       </div>
