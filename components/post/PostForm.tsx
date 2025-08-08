@@ -68,8 +68,8 @@ const formSchema = z.object({
   title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
   slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元").optional(),
   slugStatus: z.enum(["success", "error", "validating"]).optional(),
-  categoryId: z.number().optional()
-    .refine((val) => val !== undefined && val > 0, {
+  categoryId: z.number().optional().nullable()
+    .refine(val => val != null && val > 0, {
       message: "請選擇主題"
     }),
   subCategoryId: z.number().optional().nullable(),
@@ -98,6 +98,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     const [oldCoverImageUrl, setOldCoverImageUrl] = useState<string | undefined>(undefined);
     const [isLoadingSubCategories, setIsLoadingSubCategories] = useState(false);
     const [newlyAddedCategoryId, setNewlyAddedCategoryId] = useState<number | null>(null);
+    const [newlyAddedSubCategoryId, setNewlyAddedSubCategoryId] = useState<number | null>(null);
 
     const { 
       newCategoryId, 
@@ -126,7 +127,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         slug: "",
         slugStatus: undefined,
         content: "",
-        categoryId: undefined,
+        categoryId: null,
         subCategoryId: null,
         tagIds: [],
         isPublished: false,
@@ -197,10 +198,10 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     }, [allCategories, mode]);
   
     // 當主題改變時載入對應的子主題
-    const handleCategoryChange = useCallback(async (categoryId: number, isEditMode = false, initialSubCategoryId?: number) => {
+    const handleCategoryChange = useCallback(async (categoryId: number | null, isEditMode = false, initialSubCategoryId?: number | null) => {
       if (!categoryId) {
         setSubCategories([])
-        form.setValue('subCategoryId', undefined)
+        form.setValue('subCategoryId', null)
         setIsLoadingSubCategories(false)
         return
       }
@@ -210,21 +211,18 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         const response = await fetch(`/api/categories/${categoryId}/sub-categories?all=true`)
         if (!response.ok) throw new Error('載入子主題失敗')
         const data = await response.json()
-        // console.log('子主題數據:', data.data)
-        setSubCategories(data.data || [])  // 直接使用 data.data，因為 API 直接返回數組
+        setSubCategories(data.data || [])
         
-        // 只有在非編輯模式或沒有初始子主題ID時才重置子主題選擇
         if (!isEditMode || !initialSubCategoryId) {
-          form.setValue('subCategoryId', undefined)
+          form.setValue('subCategoryId', null)
         } else {
-          // 在編輯模式下，設置初始的子主題值
           form.setValue('subCategoryId', initialSubCategoryId)
         }
       } catch (error) {
         console.error('載入子主題失敗:', error)
         toast.error('載入子主題失敗')
         setSubCategories([])
-        form.setValue('subCategoryId', undefined)
+        form.setValue('subCategoryId', null)
       } finally {
         setIsLoadingSubCategories(false)
       }
@@ -279,16 +277,26 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
               return prev;
             });
 
-            form.setValue('subCategoryId', newSubCategory.id);
+            setNewlyAddedSubCategoryId(newSubCategory.id);
 
           } catch (error) {
             console.error('獲取新子主題詳情失敗:', error);
+          } finally {
+            setNewSubCategoryId(null);
           }
         };
         fetchNewSubCategory();
-        setNewSubCategoryId(null);
       }
-    }, [newSubCategoryId, setNewSubCategoryId, form]);
+    }, [newSubCategoryId, setNewSubCategoryId]);
+
+    // 當新子主題被添加且出現在列表中時，更新表單
+    useEffect(() => {
+      if (newlyAddedSubCategoryId && subCategories.some(sub => sub.id === newlyAddedSubCategoryId)) {
+        form.setValue('subCategoryId', newlyAddedSubCategoryId);
+        form.trigger('subCategoryId'); // 觸發驗證
+        setNewlyAddedSubCategoryId(null); // 重置觸發器
+      }
+    }, [newlyAddedSubCategoryId, subCategories, form]);
 
     // 當新主題被添加且出現在過濾後的列表中時，更新表單
     useEffect(() => {
@@ -782,21 +790,18 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         <div className="flex gap-2 items-center">
                           <Select
                             onValueChange={(value) => {
-                              // 上面是設定-1，用來判別是否清空選擇
-                              if (!value) {
-                                form.setValue('categoryId', undefined);
-                                form.setValue('subCategoryId', undefined);
+                              const numericValue = Number(value);
+                              if (numericValue === -1) {
+                                form.setValue('categoryId', null, { shouldValidate: true });
+                                form.setValue('subCategoryId', null);
                                 setSubCategories([]);
                               } else {
-                                const selectedCategory = allCategories.find(cat => cat.id.toString() === value);
-                                form.setValue('categoryId', selectedCategory?.id);
-                                // 立即清空子主題選擇
-                                form.setValue('subCategoryId', undefined);
-                                handleCategoryChange(Number(value), false);
+                                form.setValue('categoryId', numericValue, { shouldValidate: true });
+                                form.setValue('subCategoryId', null);
+                                handleCategoryChange(numericValue, false);
                               }
-                              form.trigger("categoryId"); // 手動觸發驗證
                             }}
-                            value={field.value ? field.value.toString() : ""}
+                            value={field.value?.toString() ?? ""}
                           >
                             <FormControl>
                               <SelectTrigger className="w-full" ref={field.ref}>
@@ -834,16 +839,14 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                         <div className="flex gap-2 items-center">
                           <Select
                             onValueChange={(value) => {
-                              // console.log(value);
-                              
                               if (value === 'reset') {
-                                form.setValue('subCategoryId', undefined)
+                                form.setValue('subCategoryId', null)
                                 return
                               }
                               const selectedSubCategory = subCategories.find(subCat => subCat.id.toString() === value)
-                              form.setValue('subCategoryId', selectedSubCategory?.id || undefined)
+                              form.setValue('subCategoryId', selectedSubCategory?.id || null)
                             }}
-                            value={field.value ? field.value.toString() : ""}
+                            value={field.value?.toString() ?? ""}
                             disabled={!form.watch('categoryId') || isLoadingSubCategories}
                           >
                             <FormControl>

@@ -267,4 +267,33 @@ const { data, error } = await supabase
 ### 3. 性能指標
 - Core Web Vitals
 - Lighthouse 優化
-- 可訪問性支援 
+- 可訪問性支援
+
+## 開發經驗與解決方案
+
+### 1. 複雜表單狀態管理：以 `PostForm` 為例
+
+在開發後台文章編輯功能（`components/post/PostForm.tsx`）時，我們遇到了一個關於下拉選單（`Select`）在編輯模式下的狀態同步問題。這個問題的核心在於**狀態表示的不一致性**，導致 UI 行為不符合預期。
+
+#### 問題描述
+
+當使用者在編輯模式下，試圖將一個已經選定的主題（`categoryId`）重設為「請選擇主題」時，UI 會自動跳回先前儲存的選項，而不是停留在「請選擇主題」的 placeholder 狀態。
+
+#### 根本原因
+
+這個問題的根源在於整個元件中，用來表示「未選擇」或「空值」的狀態是混亂的，同時存在 `undefined`、`null` 和空字串 `""` 三種情況，導致了 `react-hook-form` 的狀態管理與 `shadcn/ui` 的 `Select` 元件之間的互動出現問題。
+
+1.  **狀態表示不一**：表單的預設值、UI 的操作邏輯和 Zod 的驗證模型對於「空值」的定義不統一。
+2.  **UI 元件行為**：`Select` 元件在接收到 `undefined` 或 `null` 的 `value` 屬性時，其顯示 placeholder 的行為不穩定，容易在 `react-hook-form` 重新渲染時，因為找不到對應的 `value` 而跳回上一個有效的選項。
+
+#### 解決方案：統一狀態表示
+
+為了解決這個問題，我們採取了系統性的重構，核心思想是**統一狀態表示**，讓整個元件只使用一種方式來代表「空值」。
+
+1.  **統一使用 `null`**：我們將 `null` 定義為整個元件中唯一的「空值」表示。
+2.  **修改 Zod Schema**：更新了 `categoryId` 的驗證規則，使其明確接受 `number | null`，並透過 `.refine()` 方法將 `null` 視為一個無效的輸入，從而觸發「請選擇主題」的錯誤提示。
+3.  **更新表單預設值**：將 `categoryId` 和 `subCategoryId` 的 `defaultValue` 從 `undefined` 修改為 `null`。
+4.  **重構核心函式與事件處理**：
+    *   修改了 `handleCategoryChange` 函式，使其能正確處理傳入 `null` 的情況。
+    *   修改了下拉選單的 `onValueChange` 事件，確保在清空選項時，是使用 `form.setValue('...', null)` 來更新表單狀態。
+    *   最後，調整了 `Select` 元件的 `value` 屬性為 `field.value?.toString() ?? ""`，確保當表單狀態為 `null` 時，UI 元件能正確地接收到一個空字串，從而穩定地顯示 placeholder。 
