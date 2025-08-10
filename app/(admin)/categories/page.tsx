@@ -27,6 +27,11 @@ import {
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   Table,
   TableBody,
   TableCell,
@@ -274,15 +279,34 @@ export default function CategoriesPage() {
                           <PencilIcon className="w-4 h-4" />
                           <span className="sr-only">編輯</span>
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(category)}
-                          className="cursor-pointer"
-                        >
-                          <Trash2Icon className="w-4 h-4" />
-                          <span className="sr-only">刪除</span>
-                        </Button>
+                        {category.name === '未分類' ? (
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="cursor-not-allowed opacity-50 text-gray-400"
+                                >
+                                  <Trash2Icon className="w-4 h-4" />
+                                  <span className="sr-only">刪除</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>「未分類」是系統預設類別，用於歸檔沒有明確指定類別的文章，因此無法刪除。</p>
+                              </TooltipContent>
+                            </Tooltip>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(category)}
+                            className="cursor-pointer"
+                          >
+                            <Trash2Icon className="w-4 h-4" />
+                            <span className="sr-only">刪除</span>
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

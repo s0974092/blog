@@ -35,6 +35,12 @@ import { PostImageUploader } from "./PostImageUploader";
 import { YooptaContentValue } from '@yoopta/editor';
 import { PostEditorRef } from "./PostEditor";
 import dynamic from 'next/dynamic';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const PostEditor = dynamic(() => import('./PostEditor').then(mod => mod.PostEditor), { 
   ssr: false, 
@@ -249,10 +255,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         categoriesToFilter = categoriesToFilter.filter(cat => cat.name !== '未分類');
       }
 
-      // 檢查是否有其他主題，如果沒有，則即使在 new mode 也顯示「未分類」
-      if (mode === 'new' && categoriesToFilter.length === 0 && allCategories.length > 0) {
-        categoriesToFilter = [...allCategories];
-      }
+      
 
       setFilteredCategories([{ id: -1, name: '請選擇主題' }, ...categoriesToFilter]);
     }, [allCategories, mode]);
@@ -713,7 +716,18 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
       );
     }
 
+    const isSubCategoryAddDisabled =
+      !form.watch('categoryId') ||
+      isLoadingSubCategories ||
+      (form.watch('categoryId') &&
+        allCategories.find(cat => cat.id === form.watch('categoryId'))?.name === '未分類');
+
+    const isUncategorizedSelected =
+      form.watch('categoryId') &&
+      allCategories.find(cat => cat.id === form.watch('categoryId'))?.name === '未分類';
+
     return (
+      <TooltipProvider>
       <div className="container w-full">
         <div className="min-h-[500px] w-full">
           <div className="flex justify-between items-center mb-6">
@@ -971,15 +985,33 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                               )}
                             </SelectContent>
                           </Select>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={handleAddSubCategory}
-                            disabled={!form.watch('categoryId') || isLoadingSubCategories}
-                          >
-                            <PlusIcon className="h-4 w-4" />
-                          </Button>
+                          {isUncategorizedSelected ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="cursor-not-allowed opacity-50 text-gray-400"
+                                >
+                                  <PlusIcon className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>「未分類」主題下不允許新增子主題。</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={handleAddSubCategory}
+                              disabled={!!isSubCategoryAddDisabled}
+                            >
+                              <PlusIcon className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                         <FormMessage />
                       </FormItem>
@@ -1101,6 +1133,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
           </div>
         </div>
       </div>
+    </TooltipProvider>
     )
 }
 
