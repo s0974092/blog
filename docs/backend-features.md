@@ -333,7 +333,7 @@ model Tag {
 ### 3. 標籤 API (`app/api/tags/`)
 - `GET /api/tags` - 獲取標籤列表
 - `POST /api/tags` - 創建標籤
-- `PUT /api/tags/[id]` - 更新標籤
+- `PATCH /api/tags/[id]` - 更新標籤
 - `DELETE /api/tags/[id]` - 刪除標籤
 
 ## 身份驗證與權限

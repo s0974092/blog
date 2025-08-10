@@ -69,7 +69,7 @@ export async function GET(
     }
 }
 
-export async function PUT(
+export async function PATCH(
     request: Request,
     context: { params: Promise<{ id: string }> }
   ) {
@@ -126,6 +126,7 @@ export async function PUT(
           published: isPublished,
           slug,
           coverImageUrl,
+          updatedAt: new Date(),
         }
       });
 

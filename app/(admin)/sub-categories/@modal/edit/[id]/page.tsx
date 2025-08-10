@@ -121,7 +121,7 @@ export default function EditSubCategoryModal({ params: paramsPromise }: { params
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const response = await fetch(`/api/sub-categories/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },

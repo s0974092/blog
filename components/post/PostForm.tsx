@@ -610,7 +610,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
 
           // 編輯文章
           const response = await fetch(`/api/posts/${postId}`, {
-            method: "PUT",
+            method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...values,

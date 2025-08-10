@@ -240,7 +240,8 @@ export async function PATCH(
       },
       data: {
         name,
-        updatedBy: user.id
+        updatedBy: user.id,
+        updatedAt: new Date(),
       }
     })
 

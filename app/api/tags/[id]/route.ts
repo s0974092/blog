@@ -98,7 +98,10 @@ export async function PATCH(
     
     const tag = await prisma.tag.update({
       where: { id },
-      data: validatedData.data,
+      data: {
+        ...validatedData.data,
+        updatedAt: new Date(),
+      },
     });
     
     return NextResponse.json({ success: true, data: tag });
