@@ -65,6 +65,8 @@
 
 唯一的條件是保留原始的版權聲明和許可證聲明。
 
+更多關於許可證的詳細分析，請參考 [開源許可證分析報告](docs/license_analysis.md)。
+
 ## 🔧 安裝與運行
 
 ### 前置需求
@@ -83,6 +85,8 @@ cd blog
 # 安裝依賴
 npm install
 
+# 注意：`npm install` 會自動執行 `npx prisma generate` 來生成 Prisma Client。若您手動修改了 `prisma/schema.prisma` 檔案，請記得執行 `npx prisma generate` 來更新 Client。
+
 # 設定環境變數
 cp .env.example .env.local
 # 編輯 .env.local 檔案，填入您的 Supabase 設定
@@ -91,22 +95,14 @@ cp .env.example .env.local
 npm run dev
 ```
 
-### 資料庫初始化
+### 資料庫設定
 
-當您第一次設定好資料庫，或是在執行資料庫重設 (`reset`) 之後，您需要執行以下的 `seed` 指令來填充必要的初始資料。
-
-這個指令會自動建立一個名為「未分類」的預設主題，這是確保主題刪除功能可以正常運作的關鍵步驟。
-
-```bash
-# 執行資料庫填充
-npm run prisma:seed
-```
-
+關於資料庫的初始化、遷移、Seed 填充以及 RLS (Row-Level Security) 設定的詳細說明，請參考 [資料庫設定指南](docs/database-setup-guide.md)。
 
 
 ### 本機 CI 檢查
 
-在推送代碼到 GitHub 之前，您可以在本機運行檢查以確保 CI/CD 流程能夠順利通過：
+在推送代碼到 GitHub 之前，您可以在本機運行檢查以確保 CI/CD 流程能夠順利通過。更多詳細資訊，請參考 [本機開發檢查指南](docs/local-dev-troubleshooting.md)。
 
 ```bash
 # 基本檢查（推薦用於日常開發）
@@ -190,6 +186,14 @@ HUGGINGFACE_API_KEY=your_huggingface_api_key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 ```
+
+### 更多文件
+
+以下是專案中其他重要文件的連結，提供更深入的技術細節和開發指南：
+
+*   [後台功能文件](docs/backend-features.md)
+*   [前台功能文件](docs/frontend-features.md)
+*   [Next.js 快取策略](docs/nextjs-caching-strategies.md)
 
 ## 📁 專案結構
 

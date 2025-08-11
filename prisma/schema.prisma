@@ -15,7 +15,7 @@ model Post {
   title         String?
   slug          String       @unique
   content       Json?
-  contentText   String?      @db.Text // For full-text search
+  contentText   String?      @map("content_text") @db.Text // For full-text search
   authorId      String?      @map("author_id") @db.Uuid
   createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "npx prisma generate",
     "prisma:seed": "ts-node prisma/seed.ts",
     "dev-turbo": "next dev --turbopack",
     "dev": "next dev",
