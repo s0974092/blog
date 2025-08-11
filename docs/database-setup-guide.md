@@ -87,6 +87,12 @@ supabase db push
             *   **警告**：`repair` 指令非常強大且具有潛在風險，它只修改遷移歷史記錄，而不改變實際的資料庫 Schema。請務必在理解其影響後再執行，通常在開發環境中，如果資料可以接受遺失，重設遠端資料庫 (`Reset Database` via Supabase Dashboard) 是更簡單且安全的解決方案。
         *   **拉取遠端 Schema**：如果本地的 Schema 與遠端不一致，您也可以嘗試 `supabase db pull` 來從遠端資料庫拉取最新的 Schema 並生成對應的本地遷移檔案。
 
+### 4. 建立 Supabase Storage Buckets
+
+本專案需要兩個 Supabase Storage Buckets 用於圖片上傳：`post-content-images` 和 `post-cover-images`。這些 Buckets 用於儲存文章內容圖片和文章封面圖片。
+
+請登入您的 Supabase 儀表板，導航至 **Storage** 服務，並手動創建這兩個 Buckets。請確保它們的存取權限設定符合您的應用程式需求（例如，是否允許公開讀取）。
+
 ## 整合 Prisma
 
 雖然 Supabase CLI 是管理資料庫結構的主要工具，但您仍然可以使用 Prisma 來定義您的應用程式模型並生成 Prisma Client。
