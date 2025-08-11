@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prisma:seed": "ts-node prisma/seed.ts",
     "dev-turbo": "next dev --turbopack",
     "dev": "next dev",
     "build": "next build",
@@ -109,5 +110,8 @@
     "ts-jest": "^29.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }
