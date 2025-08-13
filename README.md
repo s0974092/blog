@@ -2,6 +2,12 @@
 
 一個使用 Next.js 15、TypeScript、Tailwind CSS 和 Supabase 建立的現代化部落格網站。
 
+## 💡 About
+
+**Next.js-powered blog** with a **static frontend** and **private backend**. Quickly set up a professional, maintainable blog and focus on creating content while managing effortlessly.
+
+使用 Next.js 快速搭建專業部落格，前端靜態化，後台私有化，專注內容創作，輕鬆管理。
+
 ## 📊 專案狀態
 
 ### 🏷️ 版本與技術
