@@ -66,68 +66,62 @@ export function useActiveHeading(setActiveId: (id: string) => void, deps: any[])
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    // 延遲執行，確保 PostEditor 完全渲染
-    const timer = setTimeout(() => {
-      // 嘗試多個選擇器來找到標題元素
-      const selectors = [
-        '.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6',
-        '[data-yoopta-editor] h1, [data-yoopta-editor] h2, [data-yoopta-editor] h3, [data-yoopta-editor] h4, [data-yoopta-editor] h5, [data-yoopta-editor] h6',
-        'h1, h2, h3, h4, h5, h6'
-      ];
+    const selectors = [
+      '.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6',
+      '[data-yoopta-editor] h1, [data-yoopta-editor] h2, [data-yoopta-editor] h3, [data-yoopta-editor] h4, [data-yoopta-editor] h5, [data-yoopta-editor] h6',
+      'h1, h2, h3, h4, h5, h6'
+    ];
 
-      let headingElements: HTMLElement[] = [];
-      
-      for (const selector of selectors) {
-        const elements = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
-        if (elements.length > 0) {
-          headingElements = elements;
-          break;
+    let headingElements: HTMLElement[] = [];
+
+    for (const selector of selectors) {
+      const elements = Array.from(
+        document.querySelectorAll(selector)
+      ) as HTMLElement[];
+      if (elements.length > 0) {
+        headingElements = elements;
+        break;
+      }
+    }
+
+    if (headingElements.length === 0) {
+      return;
+    }
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      entries => {
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => {
+            return (
+              (a.target as HTMLElement).getBoundingClientRect().top -
+              (b.target as HTMLElement).getBoundingClientRect().top
+            );
+          });
+
+        if (visible.length > 0) {
+          const activeHeadingId = visible[0].target.id;
+          setActiveId(activeHeadingId);
         }
+      },
+      {
+        root: null,
+        rootMargin: '0px 0px -80% 0px',
+        threshold: [0, 0.1, 0.5, 1]
       }
+    );
 
-      if (headingElements.length === 0) {
-        return;
-      }
-
-      // 使用共享的 ID 生成函數
-      const headings = generateUniqueIds(headingElements);
-
-      // 清理舊的 observer
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          // 只取進入視窗的 heading，並取最接近頂部的
-          const visible = entries
-            .filter((e) => e.isIntersecting)
-            .sort((a, b) => {
-              return (
-                (a.target as HTMLElement).getBoundingClientRect().top -
-                (b.target as HTMLElement).getBoundingClientRect().top
-              );
-            });
-          
-          if (visible.length > 0) {
-            const activeHeadingId = visible[0].target.id;
-            setActiveId(activeHeadingId);
-          }
-        },
-        {
-          root: null,
-          rootMargin: '0px 0px -80% 0px', // 調整觸發時機
-          threshold: [0, 0.1, 0.5, 1], // 多個閾值
-        }
-      );
-
-      headingElements.forEach((el) => {
+    headingElements.forEach(el => {
+      if (el.id) {
         observerRef.current!.observe(el);
-      });
-    }, 1500); // 延遲 1.5 秒確保 PostEditor 完全渲染
+      }
+    });
 
     return () => {
-      clearTimeout(timer);
       if (observerRef.current) observerRef.current.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,32 +133,17 @@ export function useHeadings(content: any) {
   const [headings, setHeadings] = useState<TocHeading[]>([]);
 
   useEffect(() => {
-    console.log('useHeadings: content changed, starting to look for headings');
     let observer: MutationObserver | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
 
     const findAndSetHeadings = () => {
-      console.log('useHeadings: searching for headings in DOM');
       
       // 先檢查 PostEditor 容器是否存在
       const proseContainer = document.querySelector('.prose');
       const yooptaContainer = document.querySelector('[data-yoopta-editor]');
-      console.log('useHeadings: prose container exists:', !!proseContainer);
-      console.log('useHeadings: yoopta container exists:', !!yooptaContainer);
       
       // 檢查所有可能的容器
       const allContainers = document.querySelectorAll('*[class*="editor"], *[class*="content"], *[class*="prose"], [data-yoopta-editor], [data-yoopta-element]');
-      console.log('useHeadings: found containers with editor/content/prose classes:', allContainers.length);
-      allContainers.forEach((container, index) => {
-        console.log(`useHeadings: container ${index}:`, container.tagName, container.className, container.getAttribute('data-yoopta-editor'), container.getAttribute('data-yoopta-element'));
-      });
-      
-      if (proseContainer) {
-        console.log('useHeadings: prose container HTML:', proseContainer.innerHTML.substring(0, 500));
-      }
-      if (yooptaContainer) {
-        console.log('useHeadings: yoopta container HTML:', yooptaContainer.innerHTML.substring(0, 500));
-      }
       
       // 直接從 DOM 獲取標題元素，而不是從 HTML 解析
       const selectors = [
@@ -181,7 +160,6 @@ export function useHeadings(content: any) {
       
       for (const selector of selectors) {
         const elements = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
-        console.log(`useHeadings: selector "${selector}" found ${elements.length} elements`);
         if (elements.length > 0) {
           headingElements = elements;
           break;
@@ -191,7 +169,6 @@ export function useHeadings(content: any) {
       // 如果沒有找到，嘗試在整個頁面搜索，但排除主標題
       if (headingElements.length === 0) {
         const allHeadings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')) as HTMLElement[];
-        console.log(`useHeadings: found ${allHeadings.length} total headings`);
         
         // 過濾掉主標題（通常在文章標題區域）
         headingElements = allHeadings.filter(heading => {
@@ -206,33 +183,26 @@ export function useHeadings(content: any) {
           // 檢查是否為頁面主標題（排除文章標題）
           const isPageTitle = heading.textContent === '部落格' || heading.textContent === 'Blog';
           
-          console.log(`useHeadings: heading "${heading.textContent}" - inArticle: ${!!isInArticle}, isMainTitle: ${isMainTitle}, isInPostEditor: ${!!isInPostEditor}, isPageTitle: ${isPageTitle}`);
           
           // 放寬條件：只要在 PostEditor 內且不是頁面主標題就包含
           return isInPostEditor && !isPageTitle;
         });
         
-        console.log(`useHeadings: after filtering, found ${headingElements.length} content headings`);
       }
 
       if (headingElements.length > 0) {
-        console.log('useHeadings: found heading elements:', headingElements);
         const extractedHeadings = generateUniqueIds(headingElements);
-        console.log('useHeadings: extracted headings:', extractedHeadings);
         setHeadings(extractedHeadings);
         return true; // 找到標題
       }
-      console.log('useHeadings: no heading elements found');
       return false; // 沒找到標題
     };
 
     // 立即嘗試查找標題
     if (findAndSetHeadings()) {
-      console.log('useHeadings: found headings immediately');
       return;
     }
 
-    console.log('useHeadings: setting up MutationObserver');
     // 如果沒找到，設置 MutationObserver 來監聽 DOM 變化
     observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
@@ -243,7 +213,6 @@ export function useHeadings(content: any) {
               const element = node as Element;
               // 檢查新增的元素本身是否是標題
               if (element.matches && element.matches('h1, h2, h3, h4, h5, h6')) {
-                console.log('useHeadings: found heading element in mutation');
                 if (findAndSetHeadings()) {
                   observer?.disconnect();
                   return;
@@ -252,7 +221,6 @@ export function useHeadings(content: any) {
               // 檢查新增的元素內部是否有標題
               const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6');
               if (headings.length > 0) {
-                console.log('useHeadings: found headings inside added element');
                 if (findAndSetHeadings()) {
                   observer?.disconnect();
                   return;
@@ -272,7 +240,6 @@ export function useHeadings(content: any) {
 
     // 設置一個備用的超時機制（2 秒），給 PostEditor 更多時間渲染
     timeoutId = setTimeout(() => {
-      console.log('useHeadings: timeout reached, forcing search');
       findAndSetHeadings();
       observer?.disconnect();
     }, 2000);

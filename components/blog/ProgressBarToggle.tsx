@@ -114,7 +114,7 @@ export default function ProgressBarToggle({ onToggle, defaultShowTopBar = true }
     }
   };
 
-  // 點擊外部關閉面板
+  // 點擊外部關閉面板 和 ESC 鍵關閉面板
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
@@ -122,17 +122,25 @@ export default function ProgressBarToggle({ onToggle, defaultShowTopBar = true }
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown); // Add keydown listener
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown); // Clean up keydown listener
     };
   }, [isOpen]);
 
   return (
-    <>
+    <div ref={panelRef}> {/* panelRef should be on the root element of this component */}
       {/* 浮動按鈕 */}
       <FloatingButton 
         onClick={() => setIsOpen(true)}
@@ -146,6 +154,6 @@ export default function ProgressBarToggle({ onToggle, defaultShowTopBar = true }
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
       />
-    </>
+    </div>
   );
 } 
