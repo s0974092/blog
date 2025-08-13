@@ -65,9 +65,14 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [isUploading] = useState(false);
 
+  const [inputKey, setInputKey] = useState(Date.now());
+
   // 監聽 value 變化，同步 preview 狀態
   useEffect(() => {
     setPreview(value || null);
+    if (!value) {
+      setInputKey(Date.now());
+    }
   }, [value]);
 
   // 上傳本地圖片
@@ -145,7 +150,7 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
     <div className="space-y-4">
       {/* 裁切 Modal */}
       <Dialog open={showCrop} onOpenChange={setShowCrop}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <div className="relative w-full h-[400px] bg-black">
             {cropSrc && (
               <Cropper
@@ -160,7 +165,7 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
             )}
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => { setShowCrop(false); setCropSrc(null); }}>取消</Button>
+            <Button variant="outline" onClick={() => { setShowCrop(false); setCropSrc(null); if (fileInputRef.current) { fileInputRef.current.value = ""; } }}>取消</Button>
             <Button onClick={handleCropDone}>完成裁切</Button>
           </div>
         </DialogContent>
@@ -189,9 +194,11 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
       {/* 只顯示上傳功能 */}
       {showUploadOnly && (
         <Input
+          key={inputKey}
           type="file"
           accept="image/*"
           onChange={handleFileChange}
+          onClick={(e) => { (e.target as HTMLInputElement).value = '' }}
           ref={fileInputRef}
           disabled={disabled || isGenerating || isUploading}
         />

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { PlusIcon } from "lucide-react"
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 import { debounce } from 'lodash'
 import { CheckCircle, XCircle, Loader2, HelpCircle, ArrowLeft, Edit3 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
@@ -148,27 +149,59 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
 
     const formSchema = z.object({
       title: z.string().min(1, "標題不能為空").max(100, "標題不能超過100個字元"),
-      slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元").optional(),
+      slug: z.string().min(1, "Slug不能為空").max(300, "Slug不能超過300個字元"),
       slugStatus: z.enum(["success", "error", "validating"]).optional(),
-      categoryId: z.number().optional().nullable()
-        .refine(val => val != null && val > 0, {
-          message: "請選擇主題"
-        }),
-      subCategoryId: z.number().optional().nullable(),
+      categoryId: z.number().optional().nullable(),
+      subcategoryId: z.number().optional().nullable(),
       tagIds: z.array(z.number()).optional().default([]),
-      content: z.string().min(1, "內容不能為空"),
+      content: z.string().optional(),
       isPublished: z.boolean().default(false),
       coverImageUrl: z.string().nullable().optional(),
     }).superRefine((data, ctx) => {
-      // Cover image is required in both new and edit modes
-      if (!data.coverImageUrl || data.coverImageUrl.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['coverImageUrl'],
-          message: "請提供有效的圖片（base64 或 URL）",
-        });
-      } else {
-        // If cover image exists, it must be a valid format
+      // 只有在發布狀態下才要求部分欄位必填
+      if (data.isPublished) {
+        // 移除 title 的條件驗證，因為它現在總是必填
+        if (!data.slug || data.slug.trim().length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['slug'],
+            message: "發布文章時，Slug 不能為空",
+          });
+        }
+        if (data.categoryId === null || data.categoryId! <= 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['categoryId'],
+            message: "發布文章時，請選擇主題",
+          });
+        }
+        if (!data.content || data.content.trim().length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['content'],
+            message: "發布文章時，內容不能為空",
+          });
+        }
+        // 封面圖片在發布狀態下必填且格式正確
+        if (!data.coverImageUrl || data.coverImageUrl.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['coverImageUrl'],
+            message: "發布文章時，請提供有效的圖片（base64 或 URL）",
+          });
+        } else {
+          const isValidFormat = /^data:image\/[a-zA-Z]+;base64,/.test(data.coverImageUrl) || /^https?:\/\/.+/.test(data.coverImageUrl);
+          if (!isValidFormat) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['coverImageUrl'],
+              message: "圖片格式不正確，請提供有效的 base64 或 URL",
+            });
+          }
+        }
+      }
+      // 非發布狀態下，如果提供了封面圖片，則檢查格式
+      else if (data.coverImageUrl && data.coverImageUrl.length > 0) {
         const isValidFormat = /^data:image\/[a-zA-Z]+;base64,/.test(data.coverImageUrl) || /^https?:\/\/.+/.test(data.coverImageUrl);
         if (!isValidFormat) {
           ctx.addIssue({
@@ -190,7 +223,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         slugStatus: undefined,
         content: "",
         categoryId: null,
-        subCategoryId: null,
+        subcategoryId: null,
         tagIds: [],
         isPublished: false,
         coverImageUrl: "",
@@ -264,7 +297,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     const handleCategoryChange = useCallback(async (categoryId: number | null, isEditMode = false, initialSubCategoryId?: number | null) => {
       if (!categoryId) {
         setSubCategories([])
-        form.setValue('subCategoryId', null)
+        form.setValue('subcategoryId', null)
         setIsLoadingSubCategories(false)
         return
       }
@@ -277,15 +310,15 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
         setSubCategories(data.data || [])
         
         if (!isEditMode || !initialSubCategoryId) {
-          form.setValue('subCategoryId', null)
+          form.setValue('subcategoryId', null)
         } else {
-          form.setValue('subCategoryId', initialSubCategoryId)
+          form.setValue('subcategoryId', initialSubCategoryId)
         }
       } catch (error) {
         console.error('載入子主題失敗:', error)
         toast.error('載入子主題失敗')
         setSubCategories([])
-        form.setValue('subCategoryId', null)
+        form.setValue('subcategoryId', null)
       } finally {
         setIsLoadingSubCategories(false)
       }
@@ -355,8 +388,8 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
     // 當新子主題被添加且出現在列表中時，更新表單
     useEffect(() => {
       if (newlyAddedSubCategoryId && subCategories.some(sub => sub.id === newlyAddedSubCategoryId)) {
-        form.setValue('subCategoryId', newlyAddedSubCategoryId);
-        form.trigger('subCategoryId'); // 觸發驗證
+        form.setValue('subcategoryId', newlyAddedSubCategoryId);
+        form.trigger('subcategoryId'); // 觸發驗證
         setNewlyAddedSubCategoryId(null); // 重置觸發器
       }
     }, [newlyAddedSubCategoryId, subCategories, form]);
@@ -580,6 +613,14 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
 
         const editorContent = postEditorRef.current?.getEditorValue();
 
+        // 確保 slug 有值，特別是對於草稿
+        let finalSlug = values.slug;
+        if (!finalSlug || finalSlug.trim().length === 0) {
+          // 如果 slug 為空（例如，對於沒有標題的草稿），生成一個 UUID
+          finalSlug = uuidv4();
+          form.setValue('slug', finalSlug); // 更新表單值
+        }
+
         if (mode === "new") {
           // 新增文章
           const response = await fetch("/api/posts/new", {
@@ -587,12 +628,17 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...values,
+              slug: finalSlug, // 使用 finalSlug
               content: editorContent,
               contentText: values.content, // 將純文字內容傳送給後端
               coverImageUrl
             }),
           });
-          if (!response.ok) throw new Error("新增文章失敗");
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('新增文章失敗:', errorData); // Log backend error
+            throw new Error(errorData.error || "新增文章失敗");
+          }
           toast.success("文章新增成功");
         } else if (mode === "edit" && postId) {
           // 從當前編輯器內容中提取圖片 URL
@@ -617,12 +663,17 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...values,
+              slug: finalSlug, // 使用 finalSlug
               content: editorContent,
               contentText: values.content, // 將純文字內容傳送給後端
               coverImageUrl
             }),
           });
-          if (!response.ok) throw new Error("編輯文章失敗");
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('編輯文章失敗:', errorData); // Log backend error
+            throw new Error(errorData.error || "編輯文章失敗");
+          }
           // 若有舊圖片且有更換，刪除舊圖片
           if (oldCoverImageUrl && oldCoverImageUrl !== coverImageUrl) {
             await deleteCoverImageFromSupabase(oldCoverImageUrl);
@@ -739,7 +790,19 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
 
           <div className="bg-white rounded-lg shadow p-6 w-full">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                const firstError = Object.keys(errors)[0];
+                if (firstError) {
+                  let errorField = document.querySelector(`[name="${firstError}"]`);
+                  if (!errorField) {
+                    errorField = document.getElementById(`${firstError}-form-item`);
+                  }
+                  if (errorField) {
+                    errorField.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    toast.error("請修正表單中的錯誤");
+                  }
+                }
+              })} className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -818,7 +881,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                   control={form.control}
                   name="coverImageUrl"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem id="coverImageUrl-form-item">
                       <div className="space-y-2">
                         {/* 第一排：標籤和移除按鈕 */}
                         <div className="flex justify-between items-center h-9">
@@ -890,11 +953,11 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                               const numericValue = Number(value);
                               if (numericValue === -1) {
                                 form.setValue('categoryId', null, { shouldValidate: true });
-                                form.setValue('subCategoryId', null);
+                                form.setValue('subcategoryId', null);
                                 setSubCategories([]);
                               } else {
                                 form.setValue('categoryId', numericValue, { shouldValidate: true });
-                                form.setValue('subCategoryId', null);
+                                form.setValue('subcategoryId', null);
                                 handleCategoryChange(numericValue, false);
                               }
                             }}
@@ -929,7 +992,7 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
 
                   <FormField
                     control={form.control}
-                    name="subCategoryId"
+                    name="subcategoryId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>子主題</FormLabel>
@@ -937,11 +1000,11 @@ const PostForm = ({ mode, postId }: PostFormProps) => {
                           <Select
                             onValueChange={(value) => {
                               if (value === 'reset') {
-                                form.setValue('subCategoryId', null)
+                                form.setValue('subcategoryId', null)
                                 return
                               }
                               const selectedSubCategory = subCategories.find(subCat => subCat.id.toString() === value)
-                              form.setValue('subCategoryId', selectedSubCategory?.id || null)
+                              form.setValue('subcategoryId', selectedSubCategory?.id || null)
                             }}
                             value={field.value?.toString() ?? ""}
                             disabled={!form.watch('categoryId') || isLoadingSubCategories}
