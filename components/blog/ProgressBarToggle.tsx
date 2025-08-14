@@ -20,8 +20,10 @@ function ProgressSettings({ showTopBar, onToggle, isOpen, onClose }: {
 }) {
   return (
     <div className={cn(
-      "fixed top-32 right-8 w-64 bg-white/80 backdrop-blur-md rounded shadow px-4 py-3 border border-gray-200 z-50 transform transition-all duration-300 ease-in-out",
-      isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+      "fixed top-32 w-64 bg-white/80 backdrop-blur-md rounded shadow px-4 py-3 border border-gray-200 z-50 transform transition-all duration-300 ease-in-out",
+      isOpen
+        ? "translate-x-0 opacity-100 right-8"
+        : "translate-x-full opacity-0 right-0 pointer-events-none"
     )}>
       <div className="flex items-center justify-between mb-3">
         <div className="font-bold text-gray-700">進度條設置</div>
