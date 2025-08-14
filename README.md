@@ -188,6 +188,9 @@ DATABASE_URL=your_database_url
 # [Optional] HuggingFace 配置 (使用Prompt來生成文章圖片)
 HUGGINGFACE_API_KEY=your_huggingface_api_key
 
+# [Optional] Google Tag Manager ID (用於網站分析追蹤)
+NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
+
 # 網站基礎 URL，用於 SEO 元數據、Open Graph、Twitter 卡片、站點地圖和規範化 URL（開發環境使用 localhost；生產環境應改為實際域名）
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
