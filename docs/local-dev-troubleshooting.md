@@ -13,8 +13,11 @@
 
 #### 1. 日常開發檢查
 ```bash
-# 每次修改代碼後運行
+# 基本檢查（推薦用於日常開發）
 npm run ci:basic
+
+# 快速檢查（基本檢查 + 安全審計）
+npm run ci:quick
 ```
 
 #### 2. 提交前檢查
@@ -28,6 +31,14 @@ npm run ci:pre-commit
 # 在 git push 之前運行
 npm run ci:pre-push
 ```
+
+#### 檢查內容說明
+
+- **TypeScript 類型檢查** - 確保代碼類型安全
+- **單元測試** - 運行 Jest 測試套件
+- **代碼品質檢查** - ESLint 靜態代碼分析
+- **安全審計** - 檢查依賴包的安全性
+- **構建檢查** - 確保 Next.js 應用能夠正常構建
 
 ### 自動化檢查（推薦）
 
@@ -83,22 +94,39 @@ npx husky install
    npm audit fix
    ```
 
+#### 檢查腳本詳情
+
+| 腳本 | 檢查內容 | 用途 | 執行時間 |
+|------|----------|------|----------|
+| `ci:basic` | TypeScript + 測試 | 日常開發檢查 | ~5秒 |
+| `ci:quick` | 基本檢查 + 安全審計 | 推送前快速檢查 | ~10秒 |
+| `ci:pre-commit` | 基本檢查 + 代碼品質 | Git 提交前檢查 | ~8秒 |
+| `ci:pre-push` | 完整檢查流程 | Git 推送前檢查 | ~15秒 |
+
 ### 檢查腳本對比
 
-| 檢查項目 | ci:basic | ci:quick | ci:pre-commit | ci:pre-push | ci:local |
-|----------|----------|----------|---------------|-------------|----------|
-| TypeScript | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 單元測試 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 代碼品質 | ❌ | ❌ | ✅ | ✅ | ✅ |
-| 安全審計 | ❌ | ✅ | ❌ | ✅ | ✅ |
-| 構建檢查 | ❌ | ❌ | ❌ | ✅ | ✅ |
+| 檢查項目 | ci:basic | ci:quick | ci:pre-commit | ci:pre-push |
+|----------|----------|----------|---------------|-------------|
+| TypeScript | ✅ | ✅ | ✅ | ✅ |
+| 單元測試 | ✅ | ✅ | ✅ | ✅ |
+| 代碼品質 | ❌ | ❌ | ✅ | ✅ |
+| 安全審計 | ❌ | ✅ | ❌ | ✅ |
+| 構建檢查 | ❌ | ❌ | ❌ | ✅ |
+
+### 代碼品質工具
+
+#### ESLint 配置
+專案使用嚴格的 ESLint 規則來確保代碼品質：
+
+- **錯誤級別規則**：未使用變數、prefer-const、debugger 語句
+- **警告級別規則**：any 類型、console 語句、React Hook 依賴
+- **最佳實踐**：nullish coalescing、optional chaining、類型斷言
 
 ### 性能優化建議
 
 - **開發時**：使用 `npm run ci:basic`，只檢查最重要的項目
 - **提交前**：使用 `npm run ci:pre-commit`，確保代碼品質
 - **推送前**：使用 `npm run ci:pre-push`，完整檢查
-- **CI/CD**：使用 `npm run ci:local`，模擬 GitHub Actions
 
 ### 故障排除
 
@@ -157,7 +185,7 @@ npm run format-fix
 npm run ci:basic
 
 # 每週進行完整檢查
-npm run ci:local
+npm run ci:pre-push
 ```
 
 #### 3. 團隊協作

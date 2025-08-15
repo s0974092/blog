@@ -23,8 +23,7 @@
     "ci:basic": "npm run type-check && npm run test",
     "ci:quick": "npm run ci:basic && npm run security-audit",
     "ci:pre-commit": "npm run ci:basic && npm run lint",
-    "ci:pre-push": "npm run ci:pre-commit && npm run security-audit && npm run build:no-lint",
-    "ci:local": "npm run ci:pre-push"
+    "ci:pre-push": "npm run ci:pre-commit && npm run security-audit && npm run build:no-lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
