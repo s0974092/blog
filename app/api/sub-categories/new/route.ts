@@ -1,18 +1,25 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const subCategorySchema = z.object({
+  name: z.string().min(1, '子主題名稱不能為空').max(30, '子主題名稱不能超過30個字符'),
+  categoryId: z.number().int().positive('無效的主題ID'),
+})
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, categoryId } = body
+    const validation = subCategorySchema.safeParse(body)
 
-    // 檢查必填欄位
-    if (!name || !categoryId) {
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: '請填寫所有必填欄位' },
+        { success: false, error: validation.error.errors[0].message },
         { status: 400 }
       )
     }
+
+    const { name, categoryId } = validation.data
 
     // 檢查主題是否存在
     const category = await prisma.category.findUnique({

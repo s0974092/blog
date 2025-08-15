@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 
 // 標籤驗證schema
 const tagSchema = z.object({
-  name: z.string().min(1, '標籤名稱不能為空').max(20, '標籤名稱不能超過20個字符')
+  name: z.string().min(1, '標籤名稱不能為空').max(30, '標籤名稱不能超過30個字符')
 });
 
 // GET /api/tags/[id] - 獲取單個標籤信息

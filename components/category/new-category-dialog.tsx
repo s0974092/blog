@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const formSchema = z.object({
-  name: z.string().min(1, '主題名稱不能為空').max(20, '主題名稱不能超過20個字元'),
+  name: z.string().min(1, '主題名稱不能為空').max(30, '主題名稱不能超過30個字元'),
 })
 
 type FormValues = z.infer<typeof formSchema>

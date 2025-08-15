@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 // 主題驗證schema
 const categorySchema = z.object({
-  name: z.string().min(1, '主題名稱不能為空').max(20, '主題名稱不能超過20個字符')
+  name: z.string().min(1, '主題名稱不能為空').max(30, '主題名稱不能超過30個字符')
 })
 
 // GET /api/categories/[id] - 獲取單個主題信息

@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const formSchema = z.object({
-  name: z.string().min(1, '子主題名稱不能為空').max(20, '子主題名稱不能超過20個字元'),
+  name: z.string().min(1, '子主題名稱不能為空').max(30, '子主題名稱不能超過30個字元'),
   categoryId: z.string().min(1, '請選擇所屬主題'),
 })
 
