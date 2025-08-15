@@ -25,7 +25,6 @@ You can also quickly set up a blog system like [YJ's Tech & Life Notes](https://
 - 🎨 Modern and Responsive Design
 - 🔍 Full-Text Search
 - 📱 Mobile-Optimized
-- 🌐 Multi-language Support
 - 🔐 Secure Authentication
 - 📊 Content Management System
 
