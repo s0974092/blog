@@ -33,7 +33,7 @@ export const LEGAL_CONFIG = {
 export const SITE_CONFIG = {
   name: "YJ's Tech & Life Notes",
   description: "一個專注於生活、科技與產品思維分享及感悟的部落格。",
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_VERCEL_URL ?? 'http://localhost:3000',
   author: "YJ's Tech & Life Notes",
   keywords: [
     // 核心主軸 (3個) - 網站定位
