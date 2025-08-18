@@ -50,6 +50,10 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
+
+  console.log('VERCEL_URL:', process.env.VERCEL_URL);
+  console.log('NEXT_PUBLIC_VERCEL_URL:', process.env.NEXT_PUBLIC_VERCEL_URL);
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
