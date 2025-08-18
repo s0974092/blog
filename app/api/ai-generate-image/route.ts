@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { translate } from '@vitalets/google-translate-api';
 
 export async function POST(req: NextRequest) {
+  if (!process.env.HUGGINGFACE_API_KEY) {
+    return NextResponse.json(
+      { error: '請確認HUGGINGFACE_API_KEY是否已配置上' },
+      { status: 500 },
+    );
+  }
   const { prompt } = await req.json();
   // 自動翻譯成英文
   let translatedPrompt = prompt;
