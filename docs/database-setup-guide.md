@@ -5,7 +5,7 @@
 ## 前提條件
 
 *   已安裝 Node.js 和 npm/yarn。
-*   已安裝 [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)。
+*   已安裝 [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)。(`npm install supabase --save-dev`)
 *   已安裝 Prisma CLI (`npm install -g prisma` 或 `yarn add global prisma`)。
 *   已設定 Supabase 專案。
 

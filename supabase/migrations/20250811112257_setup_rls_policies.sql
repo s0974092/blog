@@ -6,7 +6,7 @@
 -- 這是一項重要的安全措施，可以防止應用程式本身意外讀寫或竄改資料庫的遷移歷史紀錄。
 -- 只有資料庫的擁有者或高權限角色 (例如在本機端執行 `prisma migrate` 時所用的角色) 才能繞過此限制來存取此資料表。
 -- 啟用 RLS
-ALTER TABLE public._prisma_migrations ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public._prisma_migrations ENABLE ROW LEVEL SECURITY;
 
 -- 1. posts (文章)
 
