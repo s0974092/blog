@@ -17,6 +17,10 @@ You can also quickly set up a blog system like [YJ's Tech & Life Notes](https://
 
 ![Preview](blog_screenshot.png)
 
+![Frontend Demo](frontend_demo.gif)
+
+![Backend Demo](backend_demo.gif)
+
 ⭐ If you find this project helpful, please give us a Star!
 
 ## 🚀 Features
