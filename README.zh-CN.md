@@ -17,6 +17,10 @@
 
 ![Preview](blog_screenshot.png)
 
+![Frontend Demo](frontend_demo.gif)
+
+![Backend Demo](backend_demo.gif)
+
 ⭐ 如果这个项目对您有帮助，请给我们一个 Star！
 
 ## 🚀 功能特色
