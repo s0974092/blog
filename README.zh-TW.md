@@ -68,8 +68,8 @@
 
 ### 影片教學
 
-- **完整版 (安裝 + 示範):** [在 YouTube 上觀看](https://youtu.be/LcXvZeHSSYU)
-- **僅安裝:** [在 YouTube 上觀看](https://youtu.be/-YZrcpwPyiw)
+- **完整版 (安裝 + 示範):** [在 YouTube 上觀看](https://youtu.be/LG7CuhAfsUc)
+- **僅安裝:** [在 YouTube 上觀看](https://youtu.be/XxWxfSJusfY)
 - **僅示範:** [在 YouTube 上觀看](https://youtu.be/KfCgdcI2RrU)
 
 ### 安裝步驟

@@ -68,8 +68,8 @@ For a more detailed analysis of the license, please refer to the [Open Source Li
 
 ### Video Tutorial
 
-- **Full Version (Installation + Demo):** [Watch on YouTube](https://youtu.be/LcXvZeHSSYU)
-- **Installation Only:** [Watch on YouTube](https://youtu.be/-YZrcpwPyiw)
+- **Full Version (Installation + Demo):** [Watch on YouTube](https://youtu.be/LG7CuhAfsUc)
+- **Installation Only:** [Watch on YouTube](https://youtu.be/XxWxfSJusfY)
 - **Demo Only:** [Watch on YouTube](https://youtu.be/KfCgdcI2RrU)
 
 ### Installation Steps
