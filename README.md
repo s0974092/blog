@@ -47,10 +47,10 @@ You can also quickly set up a blog system like [YJ's Tech & Life Notes](https://
 
 This project is licensed under the **MIT License**, which means:
 
-✅ **You can freely use it** - for personal or commercial projects
-✅ **You can modify it** - adjust the code to your needs
-✅ **You can distribute it** - share it with others
-✅ **You can use it for commercial purposes** - without paying any license fees
+✅ **You can freely use it** - for personal or commercial projects  
+✅ **You can modify it** - adjust the code to your needs  
+✅ **You can distribute it** - share it with others  
+✅ **You can use it for commercial purposes** - without paying any license fees  
 
 The only condition is to retain the original copyright and license notices.
 
