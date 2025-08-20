@@ -66,6 +66,12 @@ For a more detailed analysis of the license, please refer to the [Open Source Li
 - Supabase account
 - Vercel account
 
+### Video Tutorial
+
+- **Full Version (Installation + Demo):** [Watch on YouTube](https://youtu.be/LcXvZeHSSYU)
+- **Installation Only:** [Watch on YouTube](https://youtu.be/-YZrcpwPyiw)
+- **Demo Only:** [Watch on YouTube](https://youtu.be/KfCgdcI2RrU)
+
 ### Installation Steps
 
 ```bash
