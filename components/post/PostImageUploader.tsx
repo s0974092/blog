@@ -13,8 +13,8 @@ function getCroppedImg(imageSrc: string, croppedAreaPixels: { x: number; y: numb
     image.src = imageSrc;
     image.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = 630;
+      canvas.width = 1280;
+      canvas.height = 720;
       const ctx = canvas.getContext('2d');
       if (!ctx) return reject('無法取得畫布');
       ctx.drawImage(
@@ -25,8 +25,8 @@ function getCroppedImg(imageSrc: string, croppedAreaPixels: { x: number; y: numb
         croppedAreaPixels.height,
         0,
         0,
-        1200,
-        630
+        1280,
+        720
       );
       canvas.toBlob((blob) => {
         if (blob) resolve(blob);
@@ -157,7 +157,7 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
                 image={cropSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={1200/630}
+                aspect={16/9}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
@@ -178,8 +178,8 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
             <Image
               src={preview}
               alt="文章封面"
-              width={1200}
-              height={630}
+              width={1280}
+              height={720}
               className="w-full aspect-[16/9] object-cover rounded border"
               priority
             />
@@ -231,8 +231,8 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
               <Image
                 src={preview}
                 alt="文章封面"
-                width={1200}
-                height={630}
+                width={1280}
+                height={720}
                 className="w-full aspect-[16/9] object-cover rounded border"
                 priority
               />
@@ -269,4 +269,4 @@ export const PostImageUploader: React.FC<PostImageUploaderProps> = ({
       )}
     </div>
   );
-}; 
+};
