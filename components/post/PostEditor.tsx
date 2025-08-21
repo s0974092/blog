@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useEffect, useState } from 'react';
-import YooptaEditor, { createYooptaEditor, YooptaContentValue } from '@yoopta/editor';
+import YooptaEditor, { createYooptaEditor, YooptaContentValue, YooptaPlugin, SlateElement } from '@yoopta/editor';
 import Paragraph from '@yoopta/paragraph';
 import Link, { LinkElementProps } from '@yoopta/link';
 import { HeadingOne, HeadingThree, HeadingTwo } from '@yoopta/headings';
@@ -15,6 +15,7 @@ import Image from '@yoopta/image';
 import Blockquote from '@yoopta/blockquote';
 import { cn, generateFileName } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import Table from '@yoopta/table';
 
 const plugins = [
   Paragraph,
@@ -72,7 +73,8 @@ const plugins = [
       },
     },
   }),
-];
+  Table,
+] as const;
 
 const TOOLS = {
   Toolbar: {
@@ -201,7 +203,7 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>((
       <div className="yoopta-full-width">
         <YooptaEditor
           editor={editor}
-          plugins={plugins}
+          plugins={plugins as readonly YooptaPlugin<Record<string, SlateElement>, Record<string, unknown>>[]}   
           tools={TOOLS}
           marks={MARKS}
           value={value}
@@ -250,6 +252,16 @@ export const PostEditor = forwardRef<PostEditorRef, PostEditorProps>((
         .yoopta-full-width :global([data-readonly="true"] [data-yoopta-element]:focus-within) {
           outline: none !important;
           box-shadow: none !important;
+        }
+
+        .yoopta-full-width :global(.yoopta-table th),
+        .yoopta-full-width :global(.yoopta-table td) {
+          border: 1px solid #E5E7EB; /* gray-200 */
+          padding: 0.75rem;
+          background-color: white;
+        }
+        .yoopta-full-width :global(.yoopta-table th) {
+          background-color: #F3F4F6; /* gray-100 */
         }
       `}</style>
     </div>
