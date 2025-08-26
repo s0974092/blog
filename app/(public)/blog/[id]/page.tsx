@@ -4,7 +4,7 @@ import BlogDetail from '@/components/blog/BlogDetail';
 import { SITE_CONFIG } from '@/lib/constants';
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 // Helper function to extract plain text from Yoopta editor content
@@ -29,7 +29,7 @@ function extractTextFromContent(content: unknown): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = params;
+  const { id } = await params;
   const post = await getPostById(id);
 
   if (!post) {
@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogDetailPage({ params }: Props) {
-  const { id } = params;
+  const { id } = await params;
 
   return (
     <article>
