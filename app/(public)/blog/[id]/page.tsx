@@ -1,9 +1,6 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getPostById } from '@/lib/prisma';
 import BlogDetail from '@/components/blog/BlogDetail';
-import { BlogDetailSkeleton } from '@/components/blog/BlogDetailSkeleton';
 import { SITE_CONFIG } from '@/lib/constants';
 
 type Props = {
