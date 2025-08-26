@@ -1,120 +1,36 @@
-import { Metadata } from 'next';
+import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Post } from '@/types/post-card';
-import { BlogDetail } from '@/components/blog/BlogDetail';
+import { getPostById } from '@/lib/prisma';
+import BlogDetail from '@/components/blog/BlogDetail';
+import { BlogDetailSkeleton } from '@/components/blog/BlogDetailSkeleton';
 import { SITE_CONFIG } from '@/lib/constants';
 
-// 輔助函數：獲取文章資料
-async function getPost(id: string): Promise<Post | null> {
-  try {
-    const res = await fetch(`${SITE_CONFIG.url}/api/posts/${id}`, {
-      next: { revalidate: 3600 } // 快取1小時
-    });
-    
-    if (!res.ok) {
-      return null;
-    }
+type Props = {
+  params: Promise<{ id: string }>;
+};
 
-    const result = await res.json();
-    return result.data as Post;
-  } catch (error) {
-    console.error('獲取文章失敗:', error);
-    return null;
-  }
+// Server-side helper to quickly check for headings in Yoopta content
+function checkContentForHeadings(content: unknown): boolean {
+  if (!Array.isArray(content)) return false;
+  // A non-recursive, quick check is sufficient here.
+  // We just need to know if there's at least one heading.
+  return content.some(item => 
+    typeof item === 'object' && 
+    item !== null && 
+    'type' in item && 
+    typeof (item as { type?: string }).type === 'string' && 
+    (item as { type: string }).type.startsWith('heading')
+  );
 }
 
-// 生成動態metadata
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  try {
-    const { id } = await params;
-    const post = await getPost(id);
-
-    if (!post) {
-      return {
-        title: '文章未找到',
-        description: '抱歉，您要查找的文章不存在。'
-      };
-    }
-
-    // 提取文章內容的前200個字元作為描述
-    const contentText = extractTextFromContent(post.content);
-    // 過濾掉 UI 相關文字
-    const cleanDescription = contentText
-      .replace(/返回首頁/g, '')
-      .trim();
-    
-    const description = cleanDescription.length > 200 
-      ? cleanDescription.substring(0, 200) + '...' 
-      : cleanDescription;
-
-    // 如果動態生成的 description 過短或為空，則使用 SITE_CONFIG.description 作為備用
-    const finalDescription = description.length > 10 ? description : SITE_CONFIG.description;
-
-    // 生成關鍵字
-    const keywords = [
-      post.title,
-      ...(post.tags?.map(tag => tag.name) || []),
-      post.category?.name,
-      '部落格',
-      '文章'
-    ].filter(Boolean).join(', ');
-
-    return {
-      title: `${post.title}`,
-      description: finalDescription,
-      keywords,
-      authors: [{ name: SITE_CONFIG.author }],
-      openGraph: {
-        title: post.title,
-        description: finalDescription,
-        type: 'article',
-        url: `${SITE_CONFIG.url}/blog/${post.slug}`,
-        images: post.coverImageUrl ? [
-          {
-            url: post.coverImageUrl,
-            width: 200,
-            height: 630,
-            alt: post.title,
-          }
-        ] : [],
-        publishedTime: post.created_at,
-        modifiedTime: post.updated_at,
-        authors: [SITE_CONFIG.author],
-        tags: post.tags?.map(tag => tag.name) || [],
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: post.title,
-        description: finalDescription,
-        images: post.coverImageUrl ? [post.coverImageUrl] : [],
-      },
-      alternates: {
-        canonical: `${SITE_CONFIG.url}/blog/${post.slug}`,
-      },
-      other: {
-        'og:description': finalDescription,
-        'twitter:description': finalDescription,
-      },
-    };
-  } catch (error) {
-    console.error('生成metadata失敗:', error);
-    return {
-      title: '部落格文章',
-      description: SITE_CONFIG.description // 使用 SITE_CONFIG.description 作為錯誤時的備用
-    };
-  }
-}
-
-// 從內容中提取純文字 (遞迴處理)
+// Helper function to extract plain text from Yoopta editor content
 function extractTextFromContent(content: unknown): string {
   if (!content) return '';
-  
   let text = '';
-  
   if (typeof content === 'string') {
     return content;
   }
-  
   if (Array.isArray(content)) {
     content.forEach(item => {
       if (typeof item === 'object' && item !== null) {
@@ -126,71 +42,86 @@ function extractTextFromContent(content: unknown): string {
       }
     });
   }
-  
   return text.trim();
 }
 
-// 生成結構化資料
-function generateStructuredData(post: Post) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPostById(id);
+
+  if (!post) {
+    return {
+      title: '文章未找到',
+      description: '抱歉，您要查找的文章不存在。'
+    };
+  }
+
   const contentText = extractTextFromContent(post.content);
-  
+  const cleanDescription = contentText.replace(/返回首頁/g, '').trim();
+  const description = cleanDescription.length > 150 
+    ? cleanDescription.substring(0, 150) + '...' 
+    : cleanDescription;
+  const finalDescription = description.length > 10 ? description : (post.title || SITE_CONFIG.description);
+
+  const keywords = [
+    post.title,
+    ...(post.tags?.map(tag => tag.tag.name) || []),
+    post.category?.name,
+  ].filter(Boolean) as string[];
+
   return {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: post.title,
-    description: contentText.length > 200 ? contentText.substring(0, 200) + '...' : contentText,
-    image: post.coverImageUrl ? [post.coverImageUrl] : [],
-    author: {
-      '@type': 'Person',
-      name: SITE_CONFIG.author
+    title: post.title,
+    description: finalDescription,
+    keywords: keywords,
+    authors: [{ name: SITE_CONFIG.author }],
+    openGraph: {
+      title: post.title || '',
+      description: finalDescription,
+      type: 'article',
+      url: `${SITE_CONFIG.url}/blog/${post.slug}`,
+      images: post.coverImageUrl ? [{
+        url: post.coverImageUrl,
+        width: 1200,
+        height: 630,
+        alt: post.title || '',
+      }] : [],
+      publishedTime: post.createdAt.toISOString(),
+      modifiedTime: post.updatedAt.toISOString(),
+      authors: [SITE_CONFIG.author],
+      tags: post.tags?.map(tag => tag.tag.name) || [],
     },
-    publisher: {
-      '@type': 'Organization',
-      name: SITE_CONFIG.author,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${SITE_CONFIG.url}/logo.png`
-      }
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title || '',
+      description: finalDescription,
+      images: post.coverImageUrl ? [post.coverImageUrl] : [],
     },
-    datePublished: post.created_at,
-    dateModified: post.updated_at || post.created_at,
-    mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': `${SITE_CONFIG.url}/blog/${post.slug}`
+    alternates: {
+      canonical: `${SITE_CONFIG.url}/blog/${post.slug}`,
     },
-    articleSection: post.category?.name,
-    keywords: post.tags?.map(tag => tag.name).join(', '),
-    wordCount: contentText.length,
   };
 }
 
-export default async function BlogDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const post = await getPost(id);
+export default async function BlogDetailPage({ params }: Props) {
+  const { id } = await params;
+  // Fetch post data here to determine `hasToc` for the skeleton.
+  // This call is deduplicated by Next.js and won't cause another database hit.
+  const post = await getPostById(id);
 
-    if (!post) {
-      notFound();
-    }
-
-    const structuredData = generateStructuredData(post);
-
-    return (
-      <>
-        {/* 結構化資料 */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(structuredData),
-          }}
-        />
-        
-        {/* 客戶端組件處理互動功能 */}
-        <BlogDetail post={post} />
-      </>
-    );
-  } catch (error) {
-    console.error('獲取文章失敗:', error);
+  // If the post is not found, trigger the 404 page.
+  if (!post) {
     notFound();
   }
-} 
+
+  // Check for headings on the server to pass to the skeleton.
+  const hasToc = checkContentForHeadings(post.content);
+
+  return (
+    <article>
+      <Suspense fallback={<BlogDetailSkeleton hasToc={hasToc} />}>
+        {/* The BlogDetail component still fetches its own data, which hits the cache */}
+        <BlogDetail id={id} />
+      </Suspense>
+    </article>
+  );
+}
