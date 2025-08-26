@@ -7,20 +7,6 @@ type Props = {
   params: { id: string };
 };
 
-// Server-side helper to quickly check for headings in Yoopta content
-function checkContentForHeadings(content: unknown): boolean {
-  if (!Array.isArray(content)) return false;
-  // A non-recursive, quick check is sufficient here.
-  // We just need to know if there's at least one heading.
-  return content.some(item => 
-    typeof item === 'object' && 
-    item !== null && 
-    'type' in item && 
-    typeof (item as { type?: string }).type === 'string' && 
-    (item as { type: string }).type.startsWith('heading')
-  );
-}
-
 // Helper function to extract plain text from Yoopta editor content
 function extractTextFromContent(content: unknown): string {
   if (!content) return '';
