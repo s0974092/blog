@@ -147,11 +147,12 @@
 /* Force responsive images within Yoopta editor content */
 .prose .yoopta-image img {
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important;
   max-width: 100% !important;
   margin-left: auto;
   margin-right: auto;
   border-radius: 0.5rem;
+  object-fit: contain;
 }
 
 /* Fix for Yoopta image container width, height, min-width */
@@ -170,8 +171,9 @@
 @media (min-width: 768px) {
   .prose .yoopta-image img {
     width: auto !important;
-    height: auto !important;
+    height: 100% !important;
     max-width: 650px !important;
+    object-fit: contain;
   }
   .prose .yoo-image-flex {
     max-width: 650px !important;
