@@ -7,7 +7,7 @@ import { BlogDetailSkeleton } from '@/components/blog/BlogDetailSkeleton';
 import { SITE_CONFIG } from '@/lib/constants';
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 };
 
 // Server-side helper to quickly check for headings in Yoopta content
@@ -46,7 +46,7 @@ function extractTextFromContent(content: unknown): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { id } = params;
   const post = await getPostById(id);
 
   if (!post) {
@@ -103,25 +103,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogDetailPage({ params }: Props) {
-  const { id } = await params;
-  // Fetch post data here to determine `hasToc` for the skeleton.
-  // This call is deduplicated by Next.js and won't cause another database hit.
-  const post = await getPostById(id);
-
-  // If the post is not found, trigger the 404 page.
-  if (!post) {
-    notFound();
-  }
-
-  // Check for headings on the server to pass to the skeleton.
-  const hasToc = checkContentForHeadings(post.content);
+  const { id } = params;
 
   return (
     <article>
-      <Suspense fallback={<BlogDetailSkeleton hasToc={hasToc} />}>
-        {/* The BlogDetail component still fetches its own data, which hits the cache */}
-        <BlogDetail id={id} />
-      </Suspense>
+      {/* 
+        The `loading.tsx` file now acts as the Suspense boundary for this page.
+        The <BlogDetail> component fetches its own data, and Next.js will automatically 
+        show the loading.tsx UI during this data fetching process on navigation.
+      */}
+      <BlogDetail id={id} />
     </article>
   );
 }
