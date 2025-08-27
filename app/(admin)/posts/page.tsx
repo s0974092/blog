@@ -131,18 +131,22 @@ export default function Posts() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        {post.tags && post.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag.id} variant="secondary" className="truncate max-w-[80px]">{tag.name}</Badge>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {post.tags && post.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag.id} variant="secondary" className="whitespace-normal h-auto">
+                            {tag.name}
+                          </Badge>
                         ))}
-                        {post.tags && post.tags.length > 3 && (
+                        {post.tags && post.tags.length > 2 && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Badge variant="secondary" className="cursor-pointer">...</Badge>
+                                <Badge variant="secondary" className="cursor-pointer">
+                                  +{post.tags.length - 2}
+                                </Badge>
                               </TooltipTrigger>
                               <TooltipContent>
-                                {post.tags.slice(3).map(tag => tag.name).join(', ')}
+                                <p>其他標籤：{post.tags.slice(2).map(tag => tag.name).join(', ')}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
