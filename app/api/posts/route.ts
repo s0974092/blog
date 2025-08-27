@@ -78,12 +78,10 @@ export async function GET(request: NextRequest) {
       prisma.post.count({ where }),
     ]);
 
-    // 轉換文章列表，將 tags 陣列中的 tag 物件轉換為 tag 名稱，並將日期轉為 ISO 字串
+    // 轉換文章列表，將 tags 陣列中的 tag 物件轉換為 tag 名稱
     const transformedPosts = posts.map(post => ({
       ...post,
       tags: post.tags.map(tag => tag.tag),
-      created_at: post.createdAt?.toISOString?.() ?? '',
-      updated_at: post.updatedAt?.toISOString?.() ?? '',
     }));
 
     return NextResponse.json({
