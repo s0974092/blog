@@ -44,7 +44,7 @@ export default function BlogCard({ post, priority = false, onCategoryClick, onSu
           </Link>
         </h2>
         <div className="text-xs text-gray-500">
-          {post.created_at ? new Date(post.created_at).toLocaleDateString('zh-TW') : ''}
+          {post.createdAt ? new Date(post.createdAt).toLocaleDateString('zh-TW') : ''}
         </div>
         <div className="flex flex-wrap gap-2">
           {post.category?.name && (

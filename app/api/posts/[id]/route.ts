@@ -45,12 +45,9 @@ export async function GET(
         );
       }
 
-      const { tags, createdAt, updatedAt, ...rest } = post;
       const transformedPost = {
-        ...rest,
-        tags: tags.map((t) => t.tag),
-        created_at: createdAt?.toISOString?.() ?? '',
-        updated_at: updatedAt?.toISOString?.() ?? '',
+        ...post,
+        tags: post.tags.map((t) => t.tag),
       };
       
       return NextResponse.json({ success: true, data: transformedPost });

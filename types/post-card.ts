@@ -6,9 +6,7 @@ export interface Post {
   title: string;
   coverImageUrl?: string;
   content?: YooptaContentValue;
-  created_at?: string;
   createdAt?: string;
-  updated_at?: string;
   updatedAt?: string;
   published?: boolean;
   category?: { id: number; name: string };

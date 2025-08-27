@@ -31,9 +31,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 確保 posts 是數組
     const posts = Array.isArray(result.data) ? result.data : [];
 
-    const blogUrls = posts.map((post: { slug: string; updated_at?: string; created_at: string }) => ({
+    const blogUrls = posts.map((post: { slug: string; updatedAt?: string; createdAt: string }) => ({
       url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.updated_at || post.created_at),
+      lastModified: new Date(post.updatedAt || post.createdAt),
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     }));
