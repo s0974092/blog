@@ -54,8 +54,11 @@ jobs:
     needs: [build]
     if: github.ref == 'refs/heads/main'
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
     - name: Install Vercel CLI
-      run: npm install --legacy-peer-deps && npm i -g vercel
+      run: npm install --global vercel@46.0.3
     
     - name: Deploy to Vercel
       run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
