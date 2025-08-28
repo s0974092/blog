@@ -64,7 +64,7 @@ jobs:
         cache: 'npm'
     
     - name: Install Vercel CLI
-      run: npm install --global vercel@46.0.3
+      run: npm install --legacy-peer-deps && npm i -g vercel
     
     - name: Deploy to Vercel
       run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
