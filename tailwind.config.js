@@ -42,6 +42,20 @@ module.exports = {
         lg: 'var(--radius-lg)',
         xl: 'var(--radius-xl)',
       },
+      typography: ({ theme }) => ({
+        DEFAULT: {
+          css: {
+            '--tw-prose-body': 'inherit',
+            '--tw-prose-headings': 'inherit',
+            '--tw-prose-lead': 'inherit',
+            '--tw-prose-bold': 'inherit',
+            '--tw-prose-quotes': 'inherit',
+            '--tw-prose-code': 'inherit',
+            '--tw-prose-captions': 'inherit',
+            '--tw-prose-links': theme('colors.blue.600'),
+          },
+        },
+      }),
     },
   },
   plugins: [
