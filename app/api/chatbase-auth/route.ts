@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   // In a real application, you would fetch the currently signed-in user
   // from your authentication system (e.g., database, session).
   // For demonstration, we'll use a dummy user.
