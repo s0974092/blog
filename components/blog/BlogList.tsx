@@ -38,7 +38,7 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
     if (opts?.reset) {
       setIsResetLoading(true);
       setPosts([]); // Reset posts immediately for a better UX
-    } 
+    }
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -97,23 +97,31 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
 
   return (
     <>
-      <div 
-        className={`sticky z-40 backdrop-blur bg-transparent rounded-lg p-2 transition-all duration-300 ease-in-out`}
+      <div
+        className={`sticky z-40 p-4 transition-all duration-300 ease-in-out w-fit mx-auto`}
         style={{ top: isHeaderVisible ? `${topOffset}px` : '0px' }}
       >
-        <BlogSearchBar
-          search={search}
-          categoryId={categoryId}
-          subCategoryId={subCategoryId}
-          sort={sort}
-          onChange={({ search, categoryId, subCategoryId, sort }) => {
-            setPage(1); // Reset page number on filter change
-            setSearch(search);
-            setCategoryId(categoryId);
-            setSubCategoryId(subCategoryId);
-            setSort(sort);
-          }}
-        />
+        <div className="absolute inset-0 -z-10 rounded-xl overflow-hidden">
+          <div className="absolute -inset-4 bg-white/40 backdrop-blur-[1.5px]"
+            style={{ filter: 'url(#wavy-distort)' }}
+          />
+        </div>
+        <div className="absolute inset-0 -z-10 border border-white/50 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(255,255,255,0.18),0_4px_15px_rgba(0,0,0,0.05)] pointer-events-none" />
+        <div className="relative z-10">
+          <BlogSearchBar
+            search={search}
+            categoryId={categoryId}
+            subCategoryId={subCategoryId}
+            sort={sort}
+            onChange={({ search, categoryId, subCategoryId, sort }) => {
+              setPage(1);
+              setSearch(search);
+              setCategoryId(categoryId);
+              setSubCategoryId(subCategoryId);
+              setSort(sort);
+            }}
+          />
+        </div>
       </div>
       <AnimatePresence mode="wait">
         <motion.div
@@ -127,27 +135,27 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
           {isResetLoading
             ? Array.from({ length: 5 }).map((_, i) => <BlogCardSkeleton key={i} />)
             : posts.map((post, index) => (
-                <BlogCard
-                  key={post.id}
-                  post={post}
-                  priority={index === 0} // Only the first card gets priority
-                  onCategoryClick={id => {
-                    setCategoryId(id || '');
-                    setSubCategoryId('');
-                    setSearch('');
-                  }}
-                  onSubCategoryClick={id => {
-                    setSubCategoryId(id || '');
-                    setCategoryId(post.category?.id || '');
-                    setSearch('');
-                  }}
-                  onTagClick={name => {
-                    setSearch(name);
-                    setCategoryId('');
-                    setSubCategoryId('');
-                  }}
-                />
-              ))}
+              <BlogCard
+                key={post.id}
+                post={post}
+                priority={index === 0} // Only the first card gets priority
+                onCategoryClick={id => {
+                  setCategoryId(id || '');
+                  setSubCategoryId('');
+                  setSearch('');
+                }}
+                onSubCategoryClick={id => {
+                  setSubCategoryId(id || '');
+                  setCategoryId(post.category?.id || '');
+                  setSearch('');
+                }}
+                onTagClick={name => {
+                  setSearch(name);
+                  setCategoryId('');
+                  setSubCategoryId('');
+                }}
+              />
+            ))}
           {loading && !isResetLoading && hasMore && Array.from({ length: 3 }).map((_, i) => <BlogCardSkeleton key={`sk-${i}`} />)}
         </motion.div>
       </AnimatePresence>

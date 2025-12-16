@@ -143,6 +143,9 @@
   }
 }
 
+@layer utilities {}
+
+
 /* Custom styles for blog post content */
 /* Force responsive images within Yoopta editor content */
 .prose .yoopta-image img {
@@ -160,7 +163,8 @@
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
-  min-width: 0 !important; /* Added for mobile responsiveness */
+  min-width: 0 !important;
+  /* Added for mobile responsiveness */
 }
 
 /* Hide Yoopta image ALT display in article view */
@@ -175,6 +179,7 @@
     max-width: 650px !important;
     object-fit: contain;
   }
+
   .prose .yoo-image-flex {
     max-width: 650px !important;
   }

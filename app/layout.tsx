@@ -5,6 +5,7 @@ import "@/styles/globals.css";
 import { Providers } from '@/app/providers';
 import { SITE_CONFIG } from '@/lib/constants';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { LiquidGlassDefs } from '@/components/ui/LiquidGlassDefs';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL(SITE_CONFIG.url),
-  
+
   openGraph: {
     ...SITE_CONFIG.openGraph,
     url: '/',
@@ -81,6 +82,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <LiquidGlassDefs />
         {/* Google Tag Manager (noscript) */}
         {gtmId && (
           <noscript

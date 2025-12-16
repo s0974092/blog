@@ -62,16 +62,16 @@ export default function Header({ onHeightChange, onVisibilityChange, enableHideO
   }, [scrollDirection, hasScrolled, isVisible, onVisibilityChange, enableHideOnScroll]);
 
   return (
-    <header 
+    <header
       ref={headerRef}
-      className={`sticky top-0 z-50 backdrop-blur bg-white/80 shadow transition-transform duration-300 ease-in-out ${
-        isVisible ? 'translate-y-0' : '-translate-y-full'
-      }`}
+      className={`sticky top-0 z-50 transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
     >
+      <div className="absolute inset-0 -z-10 bg-white/70 backdrop-blur-md border-b border-white/50 shadow-sm" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex justify-between items-center">
           <Link href="/blog" className="flex items-center gap-2 select-none cursor-pointer">
-            <Image src="/yj-brand-logo.png" alt={SITE_CONFIG.name+'_Header'} width={48} height={48} priority />
+            <Image src="/yj-brand-logo.png" alt={SITE_CONFIG.name + '_Header'} width={48} height={48} priority />
             <h1 className="text-3xl font-bold font-[firacode] text-gray-900">{SITE_CONFIG.name}</h1>
           </Link>
           {/* 右側登入/後台按鈕先隱藏，未來管理者直接進 /login */}
