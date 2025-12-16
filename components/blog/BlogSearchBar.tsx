@@ -79,7 +79,7 @@ export default function BlogSearchBar({ search, categoryId, subCategoryId, sort,
         onValueChange={val => onChange({ search, categoryId, subCategoryId: val === 'all' ? '' : Number(val), sort })}
         disabled={!categoryId || isSubCategoryLoading}
       >
-        <SelectTrigger className="w-40" aria-label="選擇子主題">
+        <SelectTrigger className="w-40 disabled:opacity-100 disabled:bg-white" aria-label="選擇子主題">
           <SelectValue placeholder={isSubCategoryLoading ? "載入中..." : "全部子主題"} />
         </SelectTrigger>
         <SelectContent>
