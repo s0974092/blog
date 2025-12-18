@@ -33,6 +33,7 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
   const [debouncedSearch] = useDebounce(search, 300);
   const isInitialRender = useRef(true);
 
+
   // 載入文章
   const fetchPosts = useCallback(async (pageNum: number, opts?: { reset?: boolean }) => {
     if (opts?.reset) {
@@ -102,11 +103,21 @@ export default function BlogList({ initialPosts, initialHasMore, headerHeight, i
         style={{ top: isHeaderVisible ? `${topOffset}px` : '0px' }}
       >
         <div className="absolute inset-0 -z-10 rounded-xl overflow-hidden">
-          <div className="absolute -inset-4 bg-white/40 backdrop-blur-[1.5px]"
-            style={{ filter: 'url(#wavy-distort)' }}
+          <div
+            className="absolute -inset-4 bg-white/50 backdrop-blur-[1px]"
+            style={{ filter: 'url(#liquid-glass)' }}
           />
         </div>
-        <div className="absolute inset-0 -z-10 border border-white/50 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(255,255,255,0.18),0_4px_15px_rgba(0,0,0,0.05)] pointer-events-none" />
+        {/* Specular highlight - 0.40 opacity, gradient for reflection */}
+        <div
+          className="absolute inset-0 -z-10 rounded-xl pointer-events-none"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0) 60%)',
+            boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.6), inset 0 -1px 1px rgba(0,0,0,0.05)',
+          }}
+        />
+        {/* Clean border with shadow */}
+        <div className="absolute inset-0 -z-10 border border-white/50 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] pointer-events-none" />
         <div className="relative z-10">
           <BlogSearchBar
             search={search}
