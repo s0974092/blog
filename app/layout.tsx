@@ -6,6 +6,7 @@ import { Providers } from '@/app/providers';
 import { SITE_CONFIG } from '@/lib/constants';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { LiquidGlassDefs } from '@/components/ui/LiquidGlassDefs';
+import { GoogleTagManager } from '@next/third-parties/google';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,23 +58,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const gtmId = process.env.NEXT_PUBLIC_GTM_ID; // Get GTM ID from env
   return (
     <html lang="zh-TW">
+      <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID || ''} />
       <head>
-        {/* Google Tag Manager */}
-        {gtmId && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-              })(window,document,'script','dataLayer','${gtmId}');`,
-            }}
-          />
-        )}
-        {/* End Google Tag Manager */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/yj-brand-logo.png" />
         <meta name="theme-color" content="#3b82f6" />
@@ -82,16 +70,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* Google Tag Manager (noscript) */}
-        {gtmId && (
-          <noscript
-            dangerouslySetInnerHTML={{
-              __html: `<iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}"
-              height="0" width="0" style="display:none;visibility:hidden"></iframe>`,
-            }}
-          />
-        )}
-        {/* End Google Tag Manager (noscript) */}
         <LiquidGlassDefs />
         <Providers>{children}</Providers>
         <SpeedInsights />
@@ -105,3 +83,4 @@ export default function RootLayout({
     </html>
   );
 }
+
