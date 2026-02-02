@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   },
   robots: typeof SITE_CONFIG.robots === 'string' ? SITE_CONFIG.robots : undefined,
   verification: {
-    google: 'your-google-verification-code', // 需要替換為實際的Google驗證碼
+    google: 'yAmq05SyCRJJbVQN27iAbo2Y7hBh6pFTSSheCkaxsxM',
   },
   manifest: '/manifest.json',
 };
