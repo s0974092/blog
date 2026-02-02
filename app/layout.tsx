@@ -82,7 +82,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LiquidGlassDefs />
         {/* Google Tag Manager (noscript) */}
         {gtmId && (
           <noscript
@@ -93,6 +92,7 @@ export default function RootLayout({
           />
         )}
         {/* End Google Tag Manager (noscript) */}
+        <LiquidGlassDefs />
         <Providers>{children}</Providers>
         <SpeedInsights />
         <Script
